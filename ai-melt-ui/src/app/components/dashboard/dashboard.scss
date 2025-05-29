@@ -1,0 +1,20 @@
+.dashboard-container {
+  height: 100vh;
+}
+
+.dashboard-sidenav {
+  width: 240px;
+}
+
+.dashboard-content {
+  padding: 16px;
+}
+
+.mat-list-item.disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.mat-list-item.disabled mat-icon {
+  color: rgba(0,0,0,0.3);
+}
