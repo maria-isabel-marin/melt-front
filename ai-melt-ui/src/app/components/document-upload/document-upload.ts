@@ -48,10 +48,29 @@ export class DocumentUpload {
   /** Indica si hubo error en procesamiento */
   isError: boolean = false;
 
+  /** Código de procesamiento: generado al iniciar la etapa */
+  processingCode: string = '';
+
   constructor(
     private fb: FormBuilder,
     private stageService: StageService
   ) {
+
+    // Generamos un código de procesamiento único (ej. "123AB")
+    this.processingCode = this.stageService.generateProcessingCode();
+    // Notificamos al StageService que estamos en la etapa de “document-upload”
+    this.stageService.setStage('document-upload');
+    // Inicializamos el mensaje de estado
+    this.statusMessage = `Processing code: ${this.processingCode}. Please select a document to upload.`;
+    // Inicializamos el array de batches
+    this.batches = [];
+    // Inicializamos el valor de progreso
+    this.progressValue = 0;
+    // Inicializamos el estado de error
+    this.isError = false; 
+    // Inicializamos el nombre del archivo seleccionado
+    this.selectedFileName = '';
+    
     // Inicializamos el form; validamos rangos y “prompt <= batch”
     this.form = this.fb.group({
       promptTokens: [100, [Validators.required, Validators.min(100), Validators.max(500)]],
@@ -150,9 +169,17 @@ export class DocumentUpload {
           this.progressValue = Math.round(((i + 1) / totalBatches) * 100);
         }
 
+        this.stageService.setData({
+          batches: this.batches,
+          promptTokens: this.form.get('promptTokens')!.value
+        });
+
         // Si llegamos aquí, todo OK
         this.isError = false;
         this.statusMessage = 'File loaded successfully. You may proceed to the next MELT step.';
+
+        // 1) Generar el código y guardarlo
+        //this.processingCode = this.stageService.generateProcessingCode();
         
         // Notificar al StageService que ahora activamos “metaphor-identification”
         this.stageService.setStage('metaphor-identification');

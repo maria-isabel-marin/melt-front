@@ -1,5 +1,5 @@
 <section class="upload-section">
-  <h2 class="upload-title">Upload the file you wish to process</h2>
+  <h2 class="upload-title">Upload the discourse you wish to process</h2>
 
   <!-- FILE PICKER -->
   <div class="file-picker-row">
@@ -94,5 +94,9 @@
     <span [ngClass]="{'error-text': isError, 'success-text': !isError}">
       {{ statusMessage }}
     </span>
+  </div>
+  <!-- Después de la lista de batches exitosamente generada -->
+  <div class="code-row" *ngIf="statusMessage && !isError">
+    <span class="processing-code">Processing Code: <strong>{{ processingCode }}</strong></span>
   </div>
 </section>

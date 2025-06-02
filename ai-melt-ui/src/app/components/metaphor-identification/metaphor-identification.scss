@@ -1,0 +1,102 @@
+/* src/app/components/metaphor-identification/metaphor-identification.scss */
+
+/* Variables rápidas de color (en línea con tu paleta deseada) */
+$white: #FFFFFF;
+$black: #000000;
+$deep-blue: #0A2D6D;
+$mid-blue: #1E90FF;
+$light-blue: #ADD8E6;
+$link-blue: #6495ED;
+
+.metaphor-section {
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  background-color: $white;
+  color: $black;
+  height: 100%;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  .batch-progress-bar {
+    flex: 1;
+    margin-left: 1rem;
+  }
+}
+
+.table-container {
+  margin-top: 1rem;
+  overflow-x: auto;
+
+  table {
+    width: 100%;
+    background-color: $white;
+    border: 1px solid lighten($deep-blue, 50%);
+    border-radius: 4px;
+
+    th.mat-header-cell {
+      background-color: $deep-blue;
+      color: $white;
+      font-weight: 600;
+    }
+
+    td.mat-cell {
+      color: $black;
+    }
+
+    .mat-row:hover {
+      background-color: lighten($mid-blue, 50%);
+    }
+
+    .mat-checkbox .mat-checkbox-frame {
+      border-color: $mid-blue;
+    }
+    .mat-checkbox-checked .mat-checkbox-background {
+      background-color: $mid-blue !important;
+    }
+  }
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: 500;
+  }
+}
+
+.navigation-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid lighten($deep-blue, 60%);
+
+  .left-info {
+    font-size: 0.9rem;
+  }
+
+  .paginator-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .right-action button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+/* Tipografía, iconos de acción, etc., ya se heredan de Global Material */

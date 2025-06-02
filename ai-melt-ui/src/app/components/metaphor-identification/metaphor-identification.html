@@ -1,1 +1,159 @@
-<p>metaphor-identification works!</p>
+<!-- src/app/components/metaphor-identification/metaphor-identification.html -->
+
+<section class="metaphor-section">
+  <!-- 1) HEADER con botón “Process” + barra de progreso -->
+  <div class="top-bar">
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="onProcessCurrentBatch()"
+      [disabled]="isProcessing || batches.length === 0"
+    >
+      <span class="material-icons">play_arrow</span>
+      <span>Process</span>
+    </button>
+
+    <mat-progress-bar
+      class="batch-progress-bar"
+      mode="determinate"
+      [value]="batchProgressValue"
+    ></mat-progress-bar>
+  </div>
+
+  <!-- 2) GRID de resultados (se activa después de que onProcess terminan) -->
+  <div class="table-container" *ngIf="metaphorsForPage.length > 0">
+    <table mat-table [dataSource]="dataSource" class="mat-elevation-z2">
+      <!-- Checkbox columna -->
+      <ng-container matColumnDef="select">
+        <th mat-header-cell *matHeaderCellDef>
+          <mat-checkbox
+            (change)="masterToggle()"
+            [checked]="isAllSelected()"
+            [indeterminate]="isPartialSelected()"
+          ></mat-checkbox>
+        </th>
+        <td mat-cell *matCellDef="let row">
+          <mat-checkbox
+            (click)="$event.stopPropagation()"
+            (change)="toggleSelection(row)"
+            [checked]="selection.has(row)"
+          ></mat-checkbox>
+        </td>
+      </ng-container>
+
+      <!-- Expresión metafórica -->
+      <ng-container matColumnDef="expression">
+        <th mat-header-cell *matHeaderCellDef> Expression </th>
+        <td mat-cell *matCellDef="let row"> {{ row.expression }} </td>
+      </ng-container>
+
+      <!-- Dominio Meta -->
+      <ng-container matColumnDef="targetDomain">
+        <th mat-header-cell *matHeaderCellDef> Target Domain </th>
+        <td mat-cell *matCellDef="let row"> {{ row.targetDomain }} </td>
+      </ng-container>
+
+      <!-- Dominio Fuente -->
+      <ng-container matColumnDef="sourceDomain">
+        <th mat-header-cell *matHeaderCellDef> Source Domain </th>
+        <td mat-cell *matCellDef="let row"> {{ row.sourceDomain }} </td>
+      </ng-container>
+
+      <!-- Metáfora conceptual -->
+      <ng-container matColumnDef="conceptualMetaphor">
+        <th mat-header-cell *matHeaderCellDef> Conceptual Metaphor </th>
+        <td mat-cell *matCellDef="let row"> {{ row.conceptualMetaphor }} </td>
+      </ng-container>
+
+      <!-- Tipo -->
+      <ng-container matColumnDef="type">
+        <th mat-header-cell *matHeaderCellDef> Type </th>
+        <td mat-cell *matCellDef="let row"> {{ row.type }} </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row
+          *matRowDef="let row; columns: displayedColumns"
+          (click)="toggleSelection(row)"
+      ></tr>
+    </table>
+  </div>
+
+  <!-- 3) Botones de acción (Accept, Export Sel., Export All, Send to DB) -->
+  <div class="action-buttons" *ngIf="metaphorsForPage.length > 0">
+    <button
+      mat-stroked-button
+      color="accent"
+      (click)="onAcceptSelection()"
+      [disabled]="selection.size === 0 && !hasAnyConfirmedThisPage()"
+    >
+      <span class="material-icons">check_circle</span>
+      <span>Accept Selected</span>
+    </button>
+
+    <button
+      mat-stroked-button
+      color="primary"
+      (click)="exportSelected()"
+      [disabled]="selection.size === 0"
+    >
+      <span class="material-icons">file_download</span>
+      <span>Export Selection</span>
+    </button>
+
+    <button
+      mat-stroked-button
+      color="primary"
+      (click)="exportAll()"
+    >
+      <span class="material-icons">file_download</span>
+      <span>Export All</span>
+    </button>
+
+    <button
+      mat-raised-button
+      color="warn"
+      (click)="onSendToDB()"
+      [disabled]="selection.size === 0"
+    >
+      <span class="material-icons">send</span>
+      <span>Send to DB</span>
+    </button>
+  </div>
+
+  <!-- 4) Footer de paginación + código BD + Botón “Finish identification” -->
+  <div class="navigation-row">
+    <div class="left-info">
+      <span>DB Code: <strong>{{ processingCode }}</strong></span>
+    </div>
+
+    <div class="paginator-controls">
+      <button
+        mat-icon-button
+        (click)="prevPage()"
+        [disabled]="currentPageIndex === 0"
+      >
+        <span class="material-icons">chevron_left</span>
+      </button>
+      <span> {{ currentPageIndex + 1 }} of {{ totalPages }} batches </span>
+      <button
+        mat-icon-button
+        (click)="nextPage()"
+        [disabled]="currentPageIndex >= totalPages - 1"
+      >
+        <span class="material-icons">chevron_right</span>
+      </button>
+    </div>
+
+    <div class="right-action">
+      <button
+        mat-raised-button
+        color="primary"
+        (click)="onFinishIdentification()"
+      >
+        <span class="material-icons">done_all</span>
+        <span>Finish Identification</span>
+      </button>
+    </div>
+  </div>
+</section>

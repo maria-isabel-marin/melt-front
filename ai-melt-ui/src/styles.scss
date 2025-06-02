@@ -55,3 +55,9 @@ html, body {
 body {
   scroll-behavior: smooth;
 }
+
+.custom-snackbar {
+  margin-top: 200px !important;  /* Ajusta según necesidad */
+  background-color: #4CAF50;   /* Cambia el color de fondo */
+  color: white;
+}
