@@ -6,6 +6,8 @@ import { MatInputModule }     from '@angular/material/input';
 import { MatButtonModule }    from '@angular/material/button';
 import { MatIconModule }      from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatCardModule }      from '@angular/material/card';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { StageService } from '../../services/stage.service';
 
@@ -20,99 +22,55 @@ import { StageService } from '../../services/stage.service';
     MatInputModule,
     MatButtonModule,
     MatIconModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    MatCardModule,
+    MatSnackBarModule
   ],
   templateUrl: './document-upload.html',
   styleUrls: ['./document-upload.scss']
 })
 export class DocumentUpload {
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
-
-  /** Formulario reactivo para los valores: promptTokens y batchTokens */
   form: FormGroup;
-
-  /** Nombre del archivo seleccionado */
-  selectedFileName: string = '';
-
-  /** Contenido completo del archivo */
-  fileContent: string = '';
-
-  /** Array de “batches”: cada elemento es un string con un fragmento del texto */
+  selectedFileName = '';
+  fileContent = '';
   batches: string[] = [];
-
-  /** Progreso (0..100) para la barra */
   progressValue = 0;
+  statusMessage = '';
+  isError = false;
 
-  /** Mensaje de estado (éxito o error) */
-  statusMessage: string = '';
-  /** Indica si hubo error en procesamiento */
-  isError: boolean = false;
-
-  /** Código de procesamiento: generado al iniciar la etapa */
+  /** Mostramos el processingCode generado en DocumentUpload para que el usuario lo copie. */
   processingCode: string = '';
 
   constructor(
     private fb: FormBuilder,
-    private stageService: StageService
+    private stageService: StageService,
+    private snackBar: MatSnackBar
   ) {
-
-    // Generamos un código de procesamiento único (ej. "123AB")
-    this.processingCode = this.stageService.generateProcessingCode();
-    // Notificamos al StageService que estamos en la etapa de “document-upload”
-    this.stageService.setStage('document-upload');
-    // Inicializamos el mensaje de estado
-    this.statusMessage = `Processing code: ${this.processingCode}. Please select a document to upload.`;
-    // Inicializamos el array de batches
-    this.batches = [];
-    // Inicializamos el valor de progreso
-    this.progressValue = 0;
-    // Inicializamos el estado de error
-    this.isError = false; 
-    // Inicializamos el nombre del archivo seleccionado
-    this.selectedFileName = '';
-    
-    // Inicializamos el form; validamos rangos y “prompt <= batch”
     this.form = this.fb.group({
       promptTokens: [100, [Validators.required, Validators.min(100), Validators.max(500)]],
       batchTokens: [1000, [Validators.required, Validators.min(1000), Validators.max(3000)]]
     }, { validators: [this.promptLessThanOrEqualBatch] });
-    this.stageService.setData({
-    batches: this.batches,
-    promptTokens: this.form.get('promptTokens')!.value
-});
   }
 
-  /** Validador custom: promptTokens ≤ batchTokens */
   promptLessThanOrEqualBatch(group: FormGroup) {
     const prompt = group.get('promptTokens')!.value;
     const batch = group.get('batchTokens')!.value;
     return (prompt <= batch) ? null : { promptGreaterThanBatch: true };
   }
 
-  /** Dispara el <input type="file"> al hacer clic en “Seleccionar” */
   onSelectFileClick() {
     this.fileInputRef.nativeElement.click();
   }
 
-  /** Evento cuando el usuario elige un archivo */
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      const file = input.files[0];
-      this.selectedFileName = file.name;
-      // Ya no leemos aquí; esperamos a presionar “Procesar”
+      this.selectedFileName = input.files[0].name;
     }
   }
 
-  /** Hacer “reset” del input file si se desea eliminarlo */
-  clearFileSelection() {
-    this.fileInputRef.nativeElement.value = '';
-    this.selectedFileName = '';
-  }
-
-  /** Getter para saber si hay un archivo “listo” en el input */
   get hasFileSelected(): boolean {
-    // Si fileInputRef existe Y files[] existe Y files.length > 0 => true
     return !!(
       this.fileInputRef &&
       this.fileInputRef.nativeElement &&
@@ -121,17 +79,14 @@ export class DocumentUpload {
     );
   }
 
-  /** Procesa el archivo: lee su contenido, lo divide en batches y actualiza la barra de progreso */
   onProcess() {
-    // Reiniciar estado
     this.progressValue = 0;
     this.batches = [];
     this.fileContent = '';
     this.statusMessage = '';
     this.isError = false;
 
-    // Validar que haya seleccionado archivo y formulario válido
-    if (!this.fileInputRef.nativeElement.files?.length) {
+    if (!this.hasFileSelected) {
       this.isError = true;
       this.statusMessage = 'No file selected.';
       return;
@@ -144,68 +99,71 @@ export class DocumentUpload {
 
     const file = this.fileInputRef.nativeElement.files![0];
     const reader = new FileReader();
-
     reader.onload = () => {
       try {
         const text = reader.result as string;
         this.fileContent = text;
-
-        // Convertir el texto completo en array de “tokens” (por sencillez, 
-        // separamos por espacios en blanco; asume que cada “palabra” es un token)
         const allTokens = text.split(/\s+/).filter(t => t.length > 0);
-
         const batchSize = this.form.get('batchTokens')!.value as number;
         const totalBatches = Math.ceil(allTokens.length / batchSize);
 
-        // Dividimos en batches
         for (let i = 0; i < totalBatches; i++) {
           const start = i * batchSize;
           const end = start + batchSize;
           const sliceTokens = allTokens.slice(start, end);
           const sliceText = sliceTokens.join(' ');
           this.batches.push(sliceText);
-
-          // Actualizar progreso
           this.progressValue = Math.round(((i + 1) / totalBatches) * 100);
         }
 
-        this.stageService.setData({
-          batches: this.batches,
-          promptTokens: this.form.get('promptTokens')!.value
-        });
+        this.stageService.setBatches(this.batches);
+        this.stageService.setPromptTokens(this.form.get('promptTokens')!.value);
 
-        // Si llegamos aquí, todo OK
         this.isError = false;
-        this.statusMessage = 'File loaded successfully. You may proceed to the next MELT step.';
 
-        // 1) Generar el código y guardarlo
-        //this.processingCode = this.stageService.generateProcessingCode();
-        
-        // Notificar al StageService que ahora activamos “metaphor-identification”
+        // 1) Generar el processing code aquí:
+        this.processingCode = this.stageService.generateProcessingCode();
+
+        // 2) Cambiar etapa y “alertar” al usuario:
         this.stageService.setStage('metaphor-identification');
+
+        this.snackBar.open(
+          `File loaded. Processing Code: ${this.processingCode}`, 
+          'Close', { duration: 5000 }
+        );
       }
       catch (err: any) {
         this.isError = true;
-        this.statusMessage = `The text could not be processed, error: ${err.message || err.toString()}`;
+        this.statusMessage = `Text could not be processed, error: ${err.message || err.toString()}`;
       }
     };
 
-    reader.onerror = (e) => {
+    reader.onerror = () => {
       this.isError = true;
       this.statusMessage = `FileReader error: ${reader.error?.message || 'Unknown error'}`;
     };
-
-    // Iniciar la lectura
     reader.readAsText(file);
   }
 
-  /** Helper para mostrar errores de validación en el template */
+  /** Este es el método que faltaba: copia texto al portapapeles */
+  copyToClipboard(value: string) {
+    if (!value) {
+      return;
+    }
+    navigator.clipboard.writeText(value).then(
+      () => {
+        this.snackBar.open('Processing code copied to clipboard.', 'OK', { duration: 2000 });
+      },
+      (err) => {
+        this.snackBar.open(`Failed to copy: ${err}`, 'OK', { duration: 3000 });
+      }
+    );
+  }
+
   get promptTokensControl() {
     return this.form.get('promptTokens');
   }
   get batchTokensControl() {
     return this.form.get('batchTokens');
   }
-  
 }
-

@@ -1,137 +1,85 @@
-.upload-section {
-  background-color: #FFFFFF; /* Fondo blanco */
-  padding: 2rem;
+.upload-card {
   max-width: 800px;
-  margin: 0 auto;
+  margin: 1.5rem auto;
+  padding: 1rem;
+  background-color: #ffffff;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-/* Título */
-.upload-title {
-  margin: 0 0 1.5rem 0;
-  font-size: 1.5rem;
-  font-weight: 500;
-  color: #0A2D6D; /* Azul profundo */
-  text-align: center;
+.processing-code-row {
+  margin-bottom: 1rem;
 }
 
-/* ---------- File Picker Row ---------- */
 .file-picker-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-
-  .file-picker-label {
-    font-weight: 500;
-    width: 40px;
-    color: #000000;
-  }
-  .file-path-field {
-    flex: 1;
-  }
-  button {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    background-color: #1E90FF; /* Azul medio */
-    color: #FFFFFF;
-  }
-  button:hover {
-    background-color: #6495ED; /* Azul aciano */
-  }
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
-/* ---------- Tokens Config Row ---------- */
+.file-picker-label {
+  font-weight: 600;
+  color: #0A2D6D;
+}
+
+.file-path-field {
+  flex: 1;
+}
+
 .tokens-config-row {
   display: flex;
   gap: 1rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-
-  mat-form-field {
-    width: 200px;
-  }
+  margin-bottom: 1rem;
 }
 
-/* ---------- Process Button Row ---------- */
+.half-width {
+  width: 50%;
+}
+
 .process-button-row {
-  text-align: center;
-  margin-bottom: 1.5rem;
-
-  button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    background-color: #1E90FF; /* Azul medio */
-    color: #FFFFFF;
-  }
-  button:hover {
-    background-color: #6495ED; /* Azul aciano */
-  }
-  button[disabled] {
-    background-color: #D3D3D3; /* Gris claro al estar deshabilitado */
-    color: #777777;
-  }
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
 }
 
-/* ---------- Progress Row ---------- */
 .progress-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 1rem;
   margin-bottom: 1rem;
-
-  mat-progress-bar {
-    flex: 1;
-    height: 8px;
-    border-radius: 4px;
-    background-color: #ADD8E6; /* Azul claro de fondo de barra */
-  }
-  .progress-text {
-    font-weight: 500;
-    color: #0A2D6D; /* Azul profundo */
-    width: 50px;
-    text-align: right;
-  }
 }
 
-/* ---------- Status Row ---------- */
+.progress-text {
+  font-size: 0.875rem;
+  color: #1E90FF;
+}
+
 .status-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 1rem;
-  font-size: 1rem;
-
-  .status-icon {
-    font-size: 1.5rem;
-  }
-  .success-icon {
-    color: #4CAF50; /* Verde claro para éxito */
-  }
-  .error-icon {
-    color: #E53935; /* Rojo suave para error */
-  }
-  .success-text {
-    color: #0A2D6D; /* Azul profundo para texto de éxito */
-  }
-  .error-text {
-    color: #E53935; /* Rojo suave para texto de error */
-  }
+  margin-top: 0.5rem;
 }
 
-/* ---------- Responsive Adjustments ---------- */
-@media screen and (max-width: 600px) {
-  .upload-section {
-    padding: 1rem;
-    margin: 1rem;
-  }
-  .tokens-config-row {
-    flex-direction: column;
-    mat-form-field {
-      width: 100%;
-    }
-  }
+.status-icon {
+  font-size: 1.5rem;
+}
+
+.success-icon {
+  color: #4caf50;
+}
+
+.error-icon {
+  color: #f44336;
+}
+
+.success-text {
+  color: #4caf50;
+  font-weight: 500;
+}
+
+.error-text {
+  color: #f44336;
+  font-weight: 500;
 }

@@ -8,6 +8,8 @@ $mid-blue: #1E90FF;
 $light-blue: #ADD8E6;
 $link-blue: #6495ED;
 
+@use "sass:color";
+
 .metaphor-section {
   display: flex;
   flex-direction: column;
@@ -35,7 +37,8 @@ $link-blue: #6495ED;
   table {
     width: 100%;
     background-color: $white;
-    border: 1px solid lighten($deep-blue, 50%);
+    /* Reemplazo de lighten($deep-blue, 50%) por color.adjust */
+    border: 1px solid color.adjust($deep-blue, $lightness: 50%);
     border-radius: 4px;
 
     th.mat-header-cell {
@@ -49,7 +52,8 @@ $link-blue: #6495ED;
     }
 
     .mat-row:hover {
-      background-color: lighten($mid-blue, 50%);
+      /* Reemplazo de lighten($mid-blue, 50%) */
+      background-color: color.adjust($mid-blue, $lightness: 50%);
     }
 
     .mat-checkbox .mat-checkbox-frame {
@@ -80,7 +84,8 @@ $link-blue: #6495ED;
   justify-content: space-between;
   margin-top: 2rem;
   padding-top: 1rem;
-  border-top: 1px solid lighten($deep-blue, 60%);
+  /* Reemplazo de lighten($deep-blue, 60%) */
+  border-top: 1px solid color.adjust($deep-blue, $lightness: 60%);
 
   .left-info {
     font-size: 0.9rem;

@@ -1,75 +1,99 @@
 // src/app/components/metaphor-identification/metaphor-identification.ts
 
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { CommonModule }    from '@angular/common';
-import { MatTableModule }  from '@angular/material/table';
-import { MatTableDataSource } from '@angular/material/table';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule }   from '@angular/material/icon';
+import { Component, OnInit, AfterViewInit, ViewChild, Inject } from '@angular/core';
+import { CommonModule }  from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatButtonModule }    from '@angular/material/button';
+import { MatIconModule }      from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatDialogModule } from '@angular/material/dialog';
+import { MatTableModule, MatTableDataSource }     from '@angular/material/table';
+import { MatCheckboxModule }  from '@angular/material/checkbox';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatPaginator, PageEvent, MatPaginatorModule } from '@angular/material/paginator';
+import { MatCardModule }      from '@angular/material/card';
+import { SelectionModel }     from '@angular/cdk/collections';
 
-import { StageService, MetaphorRecord,UploadResult} from '../../services/stage.service';
+import { StageService } from '../../services/stage.service';
+import { Metaphor }     from '../../models/metaphor.model';
 
-/**
- * Mock del servicio que llamaría al back-end para procesar un batch y devolver un array de MetaphorRecord.
- * En producción, reemplázalo por un HTTP service real.
- */
-function fakeProcessBatch(
-  batchText: string,
-  promptTokens: number
-): Promise<MetaphorRecord[]> {
-  return new Promise((resolve) => {
-    // Simular 1.5s de demora
-    setTimeout(() => {
-      // Genera de ejemplo 5 registros "falsos"
-      const results: MetaphorRecord[] = Array.from({ length: 5 }).map((_, i) => ({
-        expression: `Expression ${i + 1} from batch`,
-        sourceDomain: `SourceDom${i + 1}`,
-        targetDomain: `TargetDom${i + 1}`,
-        conceptualMetaphor: `Conceptual ${i + 1}`,
-        type: i % 2 === 0 ? 'Conventional' : 'Novel',
-        confirmed: false
-      }));
-      resolve(results);
-    }, 1500);
-  });
+
+/** Componente para el diálogo de confirmación genérico */
+@Component({
+  selector: 'confirm-dialog',
+  standalone: true,
+  imports: [CommonModule, MatButtonModule, MatCardModule],
+  template: `
+    <mat-card class="confirm-card">
+      <mat-card-content>
+        <h2>{{ data.title }}</h2>
+        <p>{{ data.message }}</p>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-button (click)="onCancel()">Cancel</button>
+        <button mat-raised-button color="primary" (click)="onConfirm()">OK</button>
+      </mat-card-actions>
+    </mat-card>
+  `,
+  styles: [`
+    .confirm-card {
+      max-width: 400px;
+      margin: auto;
+      padding: 1rem;
+    }
+    mat-card-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+  `]
+})
+export class ConfirmDialog {
+  constructor(
+    @Inject(MAT_DIALOG_DATA) public data: { title: string, message: string },
+    private dialogRef: MatDialogRef<ConfirmDialog>
+  ) {}
+
+  onConfirm() {
+    this.dialogRef.close(true);
+  }
+  onCancel() {
+    this.dialogRef.close(false);
+  }
 }
+
 
 @Component({
   selector: 'app-metaphor-identification',
   standalone: true,
   imports: [
     CommonModule,
-    MatTableModule,
-    MatCheckboxModule,
+    FormsModule,
+    ReactiveFormsModule,
     MatButtonModule,
     MatIconModule,
     MatProgressBarModule,
+    MatTableModule,
+    MatCheckboxModule,
     MatSnackBarModule,
-    MatDialogModule
+    MatDialogModule,
+    MatPaginatorModule,
+    MatCardModule
   ],
   templateUrl: './metaphor-identification.html',
   styleUrls: ['./metaphor-identification.scss']
 })
-export class MetaphorIdentification implements OnInit {
-  /** 1) Recibir de StageService el array de batches (texto fragmentado). */
-  batches: string[] = []; // se inyecta en ngOnInit() desde StageService (o passedData)
-  totalPages = 0;
-  currentPageIndex = 0;
+export class MetaphorIdentification implements OnInit, AfterViewInit {
+  /** Batches y configuración que vienen de DocumentUpload */
+  batches: string[] = [];
+  promptTokens = 100;
+
+  /** El código generado en DocumentUpload */
   processingCode = '';
-  promptTokens: number = 0;
 
-  /** 2) Estado de procesamiento */
-  isProcessing = false;
-  batchProgressValue = 0;
+  /** DataSource para la tabla (grid) de la página actual */
+  dataSource = new MatTableDataSource<Metaphor>([]);
 
-  /** 3) Metáforas devueltas para la página actual */
-  metaphorsForPage: MetaphorRecord[] = [];
-
-  /** 4) DataSource + columnas para material-table */
+  /** Columnas de la tabla */
   displayedColumns: string[] = [
     'select',
     'expression',
@@ -78,225 +102,265 @@ export class MetaphorIdentification implements OnInit {
     'conceptualMetaphor',
     'type'
   ];
-  dataSource: MatTableDataSource<MetaphorRecord> = new MatTableDataSource<MetaphorRecord>([]);
 
-  /** 5) Conjunto de filas seleccionadas en la página actual */
-  selection: Set<MetaphorRecord> = new Set<MetaphorRecord>();
+  /** Control de selección (checkboxes) */
+  selection = new SelectionModel<Metaphor>(true, []);
 
-  /** 6) Lista global de metáforas confirmadas (hasta ahora) – que alimentará el StageService */
-  confirmedGlobal: MetaphorRecord[] = [];
+  /** Progreso de la llamada al backend (0‒100) */
+  batchProgressValue = 0;
+
+  /** Para deshabilitar botones mientras se procesa */
+  isProcessing = false;
+
+  /** Paginador: una página = un batch */
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  currentPageIndex = 0;     // Índice actual
+  totalPages = 0;           // Total de páginas (= batches.length)
 
   constructor(
     private stageService: StageService,
-    private snackBar: MatSnackBar
-  ) {this.stageService.data$.subscribe((data: UploadResult | null) => {
-      if (data) {
-        this.batches = data.batches;
-        this.promptTokens = data.promptTokens;
-      }
-    });}
+    private snackBar: MatSnackBar,
+    private dialog: MatDialog
+  ) {}
 
-  ngOnInit(): void {
-    // 1) Traer batches (que DocumentUpload almacenó en StageService):
-    //    asumimos que StageService los guardó en algún lugar (podría ser un BehaviorSubject).
-    //    En nuestro ejemplo, simularé que StageService ya expone un método getBatches().
-    //    Si no está implementado, se debe almacenar el array this.batches en StageService
-    //    al terminar DocumentUpload. Aquí lo "tomamos":
+  ngOnInit() {
+    // 1) Leer batches y promptTokens de StageService
+    this.batches = this.stageService.getBatches() || [];
+    this.promptTokens = this.stageService.getPromptTokens() || 100;
 
-    // Por simplicidad, supongamos:
-    this.batches = this.stageService.getBatchesArray();
-    if (!this.batches || this.batches.length === 0) {
-      this.snackBar.open('No batches available. Please upload a document first.', 'Close', 
-        { verticalPosition: 'top',horizontalPosition: 'center',panelClass: ['custom-snackbar'], duration: 3000 });
-      return;
-    }
+    // 2) Leer processingCode
+    this.processingCode = this.stageService.getProcessingCode() || '';
 
-    // Simulamos 10 batches si es que no existen:
-    if (this.batches.length === 0) {
-      this.batches = Array(10).fill(''); // placeholder vacío, en producción vendría del servicio
-    }
+    // 3) Configurar totalPages
     this.totalPages = this.batches.length;
 
-    // 2) Traer el código compartido
-    this.processingCode = this.stageService.getProcessingCode();
+    // 4) Inicializar dataSource vacío
+    this.dataSource.data = [];
   }
 
-  /** Recalcular dataSource cada vez que metaphorsForPage cambia */
-  private updateTableData(): void {
-    this.dataSource.data = this.metaphorsForPage;
-    this.selection.clear();
+  ngAfterViewInit() {
+    this.dataSource.paginator = this.paginator;
   }
 
-  /** 3) Procesar el batch actual, llamar al back-end (fake) */
-  async onProcessCurrentBatch() {
+  /** Devuelve únicamente las metáforas de la página actual (batch actual) */
+  get metaphorsForPage(): Metaphor[] {
+    return this.dataSource.data;
+  }
+
+  /** Se llama al hacer clic en “Process” */
+  onProcessCurrentBatch() {
+    if (this.batches.length === 0) {
+      return;
+    }
     this.isProcessing = true;
     this.batchProgressValue = 0;
-    this.metaphorsForPage = [];
-    this.updateTableData();
+    this.dataSource.data = [];
+    this.selection.clear();
 
-    // Simular progreso incremental mientras esperamos
-    const progressInterval = setInterval(() => {
-      if (this.batchProgressValue < 90) {
-        this.batchProgressValue += 10;
+    const batchText = this.batches[this.currentPageIndex];
+
+    // Simulación de llamada "asíncrona" al backend (cada 200ms actualiza progreso)
+    const totalSteps = 10;
+    let step = 0;
+
+    const timer = setInterval(() => {
+      step++;
+      this.batchProgressValue = Math.round((step / totalSteps) * 100);
+
+      if (step >= totalSteps) {
+        clearInterval(timer);
+        // Simula datos recibidos del backend:
+        const received = this.mockFetchMetaphors(batchText);
+
+        // Inicializar confirmed=false en cada uno:
+        received.forEach(m => m.confirmed = false);
+
+        // Ponerlos en la tabla
+        this.dataSource.data = received;
+        this.isProcessing = false;
       }
     }, 200);
-
-    try {
-      const promptTokens =  // en realidad, vendría de StageService o de un campo de config
-        // Ejemplo por defecto:
-        200;
-      const batchText = this.batches[this.currentPageIndex] || '';
-      const result: MetaphorRecord[] = await fakeProcessBatch(batchText, promptTokens);
-
-      clearInterval(progressInterval);
-      this.batchProgressValue = 100;
-
-      this.metaphorsForPage = result;
-      this.updateTableData();
-      this.isProcessing = false;
-    } catch (err: any) {
-      clearInterval(progressInterval);
-      this.isProcessing = false;
-      this.snackBar.open(`Error processing batch: ${err.message}`, 'Close', { duration: 3000 });
-    }
   }
 
-  /** 4) Selección de checkbox “Select All” */
-  isAllSelected(): boolean {
-    return this.selection.size === this.metaphorsForPage.length && this.metaphorsForPage.length > 0;
+  /** Simulación de “fetch” desde el backend */
+  private mockFetchMetaphors(_batch: string): Metaphor[] {
+    return [
+      {
+        expression: 'life is a journey',
+        sourceDomain: 'journey',
+        targetDomain: 'life',
+        conceptualMetaphor: 'LIFE IS A JOURNEY',
+        type: 'conventional',
+        confirmed: false
+      },
+      {
+        expression: 'the heart of the matter',
+        sourceDomain: 'heart',
+        targetDomain: 'matter',
+        conceptualMetaphor: 'MATTER HAS A HEART',
+        type: 'novel',
+        confirmed: false
+      }
+    ];
   }
 
-  isPartialSelected(): boolean {
-    return this.selection.size > 0 && this.selection.size < this.metaphorsForPage.length;
-  }
-
+  /** Seleccionar/des-seleccionar todas las filas del grid */
   masterToggle() {
     if (this.isAllSelected()) {
       this.selection.clear();
     } else {
-      this.metaphorsForPage.forEach(row => this.selection.add(row));
+      this.dataSource.data.forEach(row => this.selection.select(row));
     }
   }
 
-  toggleSelection(row: MetaphorRecord) {
-    if (this.selection.has(row)) {
-      this.selection.delete(row);
-    } else {
-      this.selection.add(row);
-    }
+  /** Comprueba si todas las filas disponibles están seleccionadas */
+  isAllSelected(): boolean {
+    const numSelected = this.selection.selected.length;
+    const numRows = this.dataSource.data.length;
+    return numSelected === numRows && numRows > 0;
   }
 
-  /** 5) “Accept Selected”: marca confirmed=true para los seleccionados (y false para los no seleccionados) */
-  onAcceptSelection() {
-    // Primero, todos false en la página actual:
-    this.metaphorsForPage.forEach(r => (r.confirmed = false));
-
-    // Luego, los seleccionados => confirmed=true:
-    this.selection.forEach(r => (r.confirmed = true));
-
-    // Finalmente, agregarlos a la lista global (solo los confirmados):
-    const confirmedNow = this.metaphorsForPage.filter(r => r.confirmed);
-    this.confirmedGlobal.push(...confirmedNow);
-
-    // Guardamos la lista global en StageService:
-    this.stageService.addConfirmedMetaphors(confirmedNow);
-
-    // Feedback:
-    this.snackBar.open('Selected metaphors marked as confirmed.', 'Close', { duration: 2000 });
+  /** Comprueba si hay selección parcial */
+  isPartialSelected(): boolean {
+    const numSelected = this.selection.selected.length;
+    const numRows = this.dataSource.data.length;
+    return numSelected > 0 && numSelected < numRows;
   }
 
-  /** ¿Alguna fila de la página actual está ya confirmada? */
+  /** Alterna selección de un row individual (clic en checkbox de fila) */
+  toggleSelection(row: Metaphor) {
+    this.selection.toggle(row);
+  }
+
+  /** Comprueba si en la página actual existe al menos una metáfora ya confirmada */
   hasAnyConfirmedThisPage(): boolean {
-    return this.metaphorsForPage.some(r => r.confirmed);
+    return this.dataSource.data.some(m => m.confirmed);
   }
 
-  /** 6) Exportar seleccionado a Excel (CSV simplificado) */
+  /** “Accept Selected”: marca confirmed en los seleccionados de esta página y los añade al global */
+  onAcceptSelection() {
+    // 1) Anula confirmados en la página actual
+    this.dataSource.data.forEach(m => m.confirmed = false);
+
+    // 2) Confirma únicamente los seleccionados
+    this.selection.selected.forEach(m => m.confirmed = true);
+
+    // 3) Filtra los confirmados en esta página
+    const confirmedInPage = this.dataSource.data.filter(m => m.confirmed);
+
+    // 4) Agrega estos a la lista global en StageService
+    this.stageService.appendConfirmed(confirmedInPage);
+
+    this.snackBar.open(
+      `${confirmedInPage.length} metaphors accepted this batch.`,
+      'Close',
+      { duration: 3000 }
+    );
+  }
+
+  /** Exportar sólo los seleccionados a Excel/XLSX */
   exportSelected() {
-    const rows = Array.from(this.selection);
-    this.generateCsvExport(rows, 'selected_metaphors.csv');
+    import('xlsx').then(XLSX => {
+      const selected = this.dataSource.data.filter(m => this.selection.isSelected(m));
+      if (selected.length === 0) {
+        this.snackBar.open('No metaphors selected for export.', 'Close', { duration: 3000 });
+        return;
+      }
+      const worksheet = XLSX.utils.json_to_sheet(
+        selected.map(m => ({
+          Expression: m.expression,
+          'Target Domain': m.targetDomain,
+          'Source Domain': m.sourceDomain,
+          'Conceptual Metaphor': m.conceptualMetaphor,
+          Type: m.type
+        }))
+      );
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'SelectedMetaphors');
+      const wbout: any = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+
+      import('file-saver').then(FileSaver => {
+        const blob = new Blob([wbout], { type: 'application/octet-stream' });
+        FileSaver.saveAs(blob, `metaphors_${this.processingCode}_selection.xlsx`);
+      });
+    });
   }
 
-  /** 7) Exportar todo (la página actual) */
+  /** Exportar todas las filas de la página actual a Excel */
   exportAll() {
-    this.generateCsvExport(this.metaphorsForPage, 'all_metaphors.csv');
+    import('xlsx').then(XLSX => {
+      const allData = this.dataSource.data;
+      if (allData.length === 0) {
+        this.snackBar.open('No metaphors to export.', 'Close', { duration: 3000 });
+        return;
+      }
+      const worksheet = XLSX.utils.json_to_sheet(
+        allData.map(m => ({
+          Expression: m.expression,
+          'Target Domain': m.targetDomain,
+          'Source Domain': m.sourceDomain,
+          'Conceptual Metaphor': m.conceptualMetaphor,
+          Type: m.type
+        }))
+      );
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'AllMetaphors');
+      const wbout: any = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+
+      import('file-saver').then(FileSaver => {
+        const blob = new Blob([wbout], { type: 'application/octet-stream' });
+        FileSaver.saveAs(blob, `metaphors_${this.processingCode}_all.xlsx`);
+      });
+    });
   }
 
-  /** Función auxiliar para generar CSV y forzar descarga */
-  private generateCsvExport(records: MetaphorRecord[], filename: string) {
-    if (!records || records.length === 0) {
-      this.snackBar.open('No records to export.', 'Close', { duration: 2000 });
-      return;
-    }
-    const header = [
-      'Expression',
-      'TargetDomain',
-      'SourceDomain',
-      'ConceptualMetaphor',
-      'Type',
-      'Confirmed'
-    ];
-    const csvRows = [header.join(',')];
-
-    records.forEach(r => {
-      const row = [
-        `"${r.expression.replace(/"/g, '""')}"`,
-        `"${r.targetDomain}"`,
-        `"${r.sourceDomain}"`,
-        `"${r.conceptualMetaphor}"`,
-        `"${r.type}"`,
-        `"${r.confirmed}"`
-      ].join(',');
-      csvRows.push(row);
+  /** “Send to DB”: abre diálogo, confirma y envía seleccionados + processingCode */
+  onSendToDB() {
+    const dialogRef = this.dialog.open(ConfirmDialog, {
+      data: {
+        title: 'Confirm Send to Database',
+        message: 'Selected metaphors will be sent to the database. Continue?'
+      }
     });
 
-    const blob = new Blob([csvRows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.href = url;
-    link.setAttribute('download', filename);
-    link.click();
-    URL.revokeObjectURL(url);
-  }
+    dialogRef.afterClosed().subscribe(result => {
+      if (result === true) {
+        const toSend = this.dataSource.data.filter(m => m.confirmed);
+        if (toSend.length === 0) {
+          this.snackBar.open('No confirmed metaphors to send.', 'Close', { duration: 3000 });
+          return;
+        }
 
-  /** 8) “Send to DB” -> diálogo de confirmación, luego se envía al back */
-  onSendToDB() {
-    const toSend: MetaphorRecord[] = this.metaphorsForPage.filter(r => r.confirmed);
-
-    if (toSend.length === 0) {
-      this.snackBar.open('No confirmed records on this page to send.', 'Close', { duration: 2000 });
-      return;
-    }
-
-    if (!confirm('You are about to send ONLY selected records from this page to the database. Continue?')) {
-      return;
-    }
-
-    // Simular envío a back:
-    this.isProcessing = true;
-    this.batchProgressValue = 0;
-
-    const progressInterval = setInterval(() => {
-      if (this.batchProgressValue < 90) {
-        this.batchProgressValue += 10;
+        // Simulación de envío a BD con barra de progreso
+        this.batchProgressValue = 0;
+        let step = 0;
+        const totalSteps = 10;
+        const timer = setInterval(() => {
+          step++;
+          this.batchProgressValue = Math.round((step / totalSteps) * 100);
+          if (step >= totalSteps) {
+            clearInterval(timer);
+            // Aquí, en producción, se invocaría un servicio real
+            this.snackBar.open(
+              `${toSend.length} confirmed metaphors sent to DB.`,
+              'Close',
+              { duration: 3000 }
+            );
+          }
+        }, 200);
       }
-    }, 200);
-
-    // Simular delay de 1.3s
-    setTimeout(() => {
-      clearInterval(progressInterval);
-      this.batchProgressValue = 100;
-      this.isProcessing = false;
-      this.snackBar.open(`Sent ${toSend.length} records to DB with code ${this.processingCode}`, 'Close', { duration: 3000 });
-    }, 1300);
+    });
   }
 
-  /** 9) Navegación entre páginas */
+  /** Navegar a la página/batch anterior */
   prevPage() {
     if (this.currentPageIndex > 0) {
       this.currentPageIndex--;
       this.resetPageState();
     }
   }
+
+  /** Navegar a la página/batch siguiente */
   nextPage() {
     if (this.currentPageIndex < this.totalPages - 1) {
       this.currentPageIndex++;
@@ -304,25 +368,44 @@ export class MetaphorIdentification implements OnInit {
     }
   }
 
+  /** Resetea el estado de la tabla/selección cuando se cambia de página */
   private resetPageState() {
-    this.metaphorsForPage = [];
+    this.isProcessing = false;
+    this.batchProgressValue = 0;
     this.dataSource.data = [];
     this.selection.clear();
-    this.batchProgressValue = 0;
   }
 
-  /** 10) “Finish identification” */
+  /** “Finish Identification”: verifica que haya metáforas confirmadas globales */
   onFinishIdentification() {
-    const allConfirmedList = this.stageService.getAllConfirmedMetaphors();
-    if (!allConfirmedList || allConfirmedList.length === 0) {
-      alert('No metaphors have been confirmed yet. Cannot proceed to the next MELT stage.');
+    const allConfirmed = this.stageService.getConfirmedMetaphors();
+    if (allConfirmed.length === 0) {
+      this.snackBar.open(
+        'No confirmed metaphors. Cannot proceed to next stage.',
+        'Close',
+        { duration: 4000 }
+      );
       return;
     }
-    if (!confirm('Are you sure you want to finish this stage?')) {
-      return;
-    }
-    // Se asume que la siguiente etapa es “scenario-identification”
-    this.stageService.setStage('scenario-identification');
-    this.snackBar.open('Metaphor identification stage finished. Proceeding to Scenario Identification.', 'Close', { duration: 3000 });
+
+    // Diálogo de confirmación
+    const dialogRef = this.dialog.open(ConfirmDialog, {
+      data: {
+        title: 'Finalize Metaphor Identification',
+        message: 'Are you sure you want to finish this stage?'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result === true) {
+        // Avanza a siguiente etapa
+        this.stageService.setStage('scenario-identification');
+        this.snackBar.open(
+          'Metaphor Identification finished. You may proceed.',
+          'Close',
+          { duration: 3000 }
+        );
+      }
+    });
   }
 }

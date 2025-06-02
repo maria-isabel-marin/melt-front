@@ -1,5 +1,16 @@
-<section class="upload-section">
-  <h2 class="upload-title">Upload the discourse you wish to process</h2>
+<mat-card class="upload-card">
+  <mat-card-title>Upload File to Process</mat-card-title>
+
+  <!-- MOSTRAR CODIGO GENERADO, SI YA ESTÁ -->
+  <div class="processing-code-row" *ngIf="processingCode">
+    <mat-form-field appearance="outline">
+      <mat-label>Processing Code</mat-label>
+      <input matInput [value]="processingCode" readonly />
+      <button mat-icon-button matSuffix (click)="copyToClipboard(processingCode)">
+        <mat-icon>content_copy</mat-icon>
+      </button>
+    </mat-form-field>
+  </div>
 
   <!-- FILE PICKER -->
   <div class="file-picker-row">
@@ -21,14 +32,14 @@
       />
     </mat-form-field>
     <button mat-stroked-button color="primary" (click)="onSelectFileClick()">
-      <span class="material-icons">folder_open</span>
+      <mat-icon>folder_open</mat-icon>
       <span>Select</span>
     </button>
   </div>
 
   <!-- TOKENS CONFIG -->
   <div class="tokens-config-row" [formGroup]="form">
-    <mat-form-field appearance="outline">
+    <mat-form-field appearance="outline" class="half-width">
       <mat-label>Tokens per Prompt</mat-label>
       <input
         matInput
@@ -46,7 +57,7 @@
       </mat-error>
     </mat-form-field>
 
-    <mat-form-field appearance="outline">
+    <mat-form-field appearance="outline" class="half-width">
       <mat-label>Tokens per Batch</mat-label>
       <input
         matInput
@@ -73,7 +84,7 @@
       (click)="onProcess()"
       [disabled]="!form.valid || !hasFileSelected"
     >
-      <span class="material-icons">play_arrow</span>
+      <mat-icon>play_arrow</mat-icon>
       <span>Process</span>
     </button>
   </div>
@@ -91,12 +102,8 @@
   <div class="status-row" *ngIf="statusMessage">
     <mat-icon *ngIf="!isError" class="status-icon success-icon">check_circle</mat-icon>
     <mat-icon *ngIf="isError"  class="status-icon error-icon">error</mat-icon>
-    <span [ngClass]="{'error-text': isError, 'success-text': !isError}">
+    <span [ngClass]="{ 'error-text': isError, 'success-text': !isError }">
       {{ statusMessage }}
     </span>
   </div>
-  <!-- Después de la lista de batches exitosamente generada -->
-  <div class="code-row" *ngIf="statusMessage && !isError">
-    <span class="processing-code">Processing Code: <strong>{{ processingCode }}</strong></span>
-  </div>
-</section>
+</mat-card>

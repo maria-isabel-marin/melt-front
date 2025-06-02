@@ -36,7 +36,7 @@
           <mat-checkbox
             (click)="$event.stopPropagation()"
             (change)="toggleSelection(row)"
-            [checked]="selection.has(row)"
+            [checked]="selection.isSelected(row)"
           ></mat-checkbox>
         </td>
       </ng-container>
@@ -85,7 +85,7 @@
       mat-stroked-button
       color="accent"
       (click)="onAcceptSelection()"
-      [disabled]="selection.size === 0 && !hasAnyConfirmedThisPage()"
+      [disabled]="selection.selected.length === 0 && !hasAnyConfirmedThisPage()"
     >
       <span class="material-icons">check_circle</span>
       <span>Accept Selected</span>
@@ -95,7 +95,7 @@
       mat-stroked-button
       color="primary"
       (click)="exportSelected()"
-      [disabled]="selection.size === 0"
+      [disabled]="selection.selected.length === 0"
     >
       <span class="material-icons">file_download</span>
       <span>Export Selection</span>
@@ -114,7 +114,7 @@
       mat-raised-button
       color="warn"
       (click)="onSendToDB()"
-      [disabled]="selection.size === 0"
+      [disabled]="selection.selected.length === 0"
     >
       <span class="material-icons">send</span>
       <span>Send to DB</span>

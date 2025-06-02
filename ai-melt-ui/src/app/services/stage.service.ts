@@ -1,77 +1,75 @@
-// src/app/services/stage.service.ts
-
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject} from 'rxjs';
+import { Metaphor } from '../models/metaphor.model';
 
-export interface MetaphorRecord {
-  expression: string;
-  sourceDomain: string;
-  targetDomain: string;
-  conceptualMetaphor: string;
-  type: string;
-  confirmed: boolean;
-}
-
-export interface UploadResult {
-  batches: string[];
-  promptTokens: number;
-}
 
 @Injectable({
   providedIn: 'root'
 })
 export class StageService {
-  /** 1) CODE: generado en DocumentUpload (ej. "123AB") */
-  private processingCode = '';
+  /** 
+   * El “processingCode” de 3 dígitos + 2 letras. 
+   * Se genera en DocumentUpload y se comparte con todas las etapas.
+   */
+  private processingCodeSubject = new BehaviorSubject<string>('');
+  processingCode$ = this.processingCodeSubject.asObservable();
 
-  /** 2) LISTA GLOBAL de metáforas confirmadas hasta el momento */
-  private confirmedMetaphors: MetaphorRecord[] = [];
-
-  /** 3) Current stage: para controlar qué menú iluminar */
+  /** Etapa actual del pipeline (“document-upload”, “metaphor-identification”, etc.). */
   private currentStageSubject = new BehaviorSubject<string>('document-upload');
   currentStage$ = this.currentStageSubject.asObservable();
 
-  private dataSubject = new BehaviorSubject<UploadResult | null>(null);
-  data$ = this.dataSubject.asObservable();
 
-  private allBatches: string[] = [];
+  /** Lista global de batches */
+  private batches: string[] = [];
+  private promptTokens: number = 100;
 
-  constructor() { }
 
-  /** Genera y almacena un código de 3 dígitos + 2 letras */
-  public generateProcessingCode(): string {
-    // Ejemplo de generación simple:
-    const digits = Math.floor(100 + Math.random() * 900); // 100–999
-    const letters = String.fromCharCode(
-      65 + Math.floor(Math.random() * 26),
-      65 + Math.floor(Math.random() * 26)
-    ); // Dos letras mayúsculas
-    this.processingCode = `${digits}${letters}`;
-    return this.processingCode;
+  /** Lista global de metáforas confirmadas (que se van acumulando batch tras batch). */
+  private confirmedMetaphors: Metaphor[] = [];
+
+  constructor() {}
+
+  /** Genera aleatoriamente 3 dígitos + 2 letras y emite. */
+  generateProcessingCode() {
+    // Ejemplo: “382AZ”
+    const digits = Math.floor(100 + Math.random() * 900).toString(); // 3 dígitos, sin ceros iniciales
+    const letters = Array.from({ length: 2 }, () => {
+      const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      return A.charAt(Math.floor(Math.random() * 26));
+    }).join('');
+    const code = `${digits}${letters}`;
+    this.processingCodeSubject.next(code);
+    return code;
   }
 
-  /** Recupera el código actual */
-  public getProcessingCode(): string {
-    return this.processingCode;
+  /** Permite asignar manualmente (en tests, si se desea). */
+  setProcessingCode(code: string) {
+    this.processingCodeSubject.next(code);
   }
 
-  /** NOTIFICA cambio de etapa al Dashboard */
-  public setStage(stage: string): void {
+  /** Devuelve el último processingCode (valor inmediato, no Observable). */
+  getProcessingCode(): string {
+    return this.processingCodeSubject.getValue();
+  }
+
+  /** Cambia la etapa actual y emite. */
+  setStage(stage: string) {
     this.currentStageSubject.next(stage);
   }
 
-  setData(data: UploadResult) {
-    this.dataSubject.next(data);
-  }
-
-  /** Agrega un conjunto de metáforas confirmadas */
-  public addConfirmedMetaphors(newRecords: MetaphorRecord[]): void {
-    this.confirmedMetaphors.push(...newRecords);
-  }
-
-  /** Obtiene TODAS las metáforas confirmadas hasta ahora */
-  public getAllConfirmedMetaphors(): MetaphorRecord[] {
-    return this.confirmedMetaphors;
+  /** 
+   * Añade al array global las metáforas que llegan confirmadas de un batch. 
+   * Se evita duplicados en base a “expression” (si ya existe, no lo añade).
+   * TODO: cambiar lógica, se requiere otro criterio de unicidad ya que puede 
+   * haber dos expresiones iguales en distintos lugares del documento.
+   */
+  appendConfirmed(metas: Metaphor[]) {
+    metas.forEach(m => {
+      this.confirmedMetaphors.push(m);
+      /*if (!this.confirmedMetaphors.some(existing => existing.expression === m.expression)) {
+        this.confirmedMetaphors.push(m);
+      }*/
+    });
   }
 
   /** Limpia la lista global (opcional, para reiniciar flujo) */
@@ -79,12 +77,58 @@ export class StageService {
     this.confirmedMetaphors = [];
   }
 
-  public setAllBatches(batches: string[]): void {
-    this.allBatches = batches;
+  public getConfirmedMetaphors(): Metaphor[] {
+    return this.confirmedMetaphors; 
   }
 
-  public getBatchesArray(): string[] {
-    return this.allBatches;
+  /** Devuelve el array de batches (en MetaphorIdentification lo consumimos). */
+  getBatches(): string[] {
+    return [...this.batches];
   }
+
+  /** DocumentUpload llamará a este método para guardar el array de batches en el servicio. */
+  setBatches(batches: string[]) {
+    this.batches = [...batches];
+  }
+
+  /** 
+   * Añade un nuevo batch a la lista global. 
+   * Se usa para ir acumulando los batches procesados.
+   */
+
+  public addBatch(batch: string): void {
+    this.batches.push(batch);
+  }
+
+  /** 
+   * Limpia la lista de batches procesados. 
+   * Se usa para reiniciar el flujo si es necesario.
+   */  
+
+  public clearBatches(): void {
+    this.batches = [];
+  }
+
+  /** DocumentUpload guardará el valor del promptTokens (número de tokens por prompt). */
+  setPromptTokens(n: number) {
+    this.promptTokens = n;
+  }
+
+  /** Devuelve el promptTokens actual */
+  getPromptTokens(): number {
+    return this.promptTokens;
+  }
+
+  /** 
+   * Devuelve el estado actual del pipeline (etapa y código de procesamiento).
+   * Útil para mostrar en la UI o para depuración.
+   */
+  public getPipelineState(): { stage: string; processingCode: string } {
+    return {
+      stage: this.currentStageSubject.getValue(),
+      processingCode: this.processingCodeSubject.getValue()
+    };
+    }
+
+
 }
-
