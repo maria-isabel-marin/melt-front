@@ -1,13 +1,51 @@
-.intro {
-  background-color: #e3f2fd;
-  padding: 1rem 2rem;
-  font-size: 1rem;
-  color: #0a2e6d;
-  font-family: 'Roboto', sans-serif;
-  line-height: 1.6;
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;            /* Altura fija del header */
+  padding: 0 1rem;
+  background-color: #0A2D6D;    /* Fondo blanco */
+  border-bottom: 1px solid #D3D3D3;  /* Divisor sutil */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 
-  em {
-    font-style: italic;
-    font-weight: 500;
+  .header-left {
+    .header-title {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 500;
+      color: #FFFFFF;  /* Azul profundo */
+    }
+  }
+
+  .header-right {
+    .back-button {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      color: #1E90FF;   /* Azul medio */
+      background: transparent;
+      border: none;
+      font-size: 1rem;
+      font-weight: 500;
+      text-transform: none;
+      transition: color 0.2s ease;
+
+      .material-icons {
+        font-size: 1.25rem;
+      }
+    }
+    .back-button:hover {
+      color: #6495ED; /* Azul aciano */
+    }
+  }
+}
+
+/* Responsividad: en pantallas estrechas, centra el título y oculta el botón de regreso (opcional) */
+@media screen and (max-width: 600px) {
+  .app-header {
+    justify-content: center;
+    .header-right {
+      display: none;
+    }
   }
 }

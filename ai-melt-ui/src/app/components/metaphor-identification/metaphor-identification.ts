@@ -1,19 +1,24 @@
 import { Component } from '@angular/core';
-import { Dashboard } from '../dashboard/dashboard';
+import { CommonModule } from '@angular/common';
+import { StageService, UploadResult } from '../../services/stage.service';
 
 @Component({
   selector: 'app-metaphor-identification',
   standalone: true,
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './metaphor-identification.html',
-  styleUrl: './metaphor-identification.scss'
+  styleUrls: ['./metaphor-identification.scss']
 })
 export class MetaphorIdentification {
-  constructor(private dashboard: Dashboard) {}
+  public batches: string[] = [];
+  public promptTokens: number = 0;
 
-  onComplete() {
-    // upload logic…
-    this.dashboard.unlockNext('/metaphor-identification');
-    // navigate to next or show success
+  constructor(private stageService: StageService) {
+    this.stageService.data$.subscribe((data: UploadResult | null) => {
+      if (data) {
+        this.batches = data.batches;
+        this.promptTokens = data.promptTokens;
+      }
+    });
   }
 }

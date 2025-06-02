@@ -1,34 +1,66 @@
-<div class="dashboard-container">
-  <div class="dashboard-sidenav">
-    <h1>AI-MELT</h1>
+<div class="dashboard-wrapper">
+  <!-- Menú lateral fijo -->
+  <nav class="dashboard-sidenav">
+    <h2 class="sidenav-title">AI-MELT</h2>
 
-    <a routerLink="/document-upload">
+    <!-- Cada enlace incluye una comparación con currentStage -->
+    <a 
+      routerLink="/document-upload" 
+      [class.active-link]="isActive('document-upload')"
+      (click)="stageService.setStage('document-upload')"
+    >
       <span class="material-icons">upload_file</span>
-      Upload Document
+      <span class="link-text">Upload Document</span>
     </a>
-    <a routerLink="/metaphor-identification">
-      <span class="material-icons">psychology</span>
-      Detect & Classify Metaphors
-    </a>
-    <a routerLink="/scenario-identification">
-      <span class="material-icons">search</span>
-      Identify Scenarios
-    </a>
-    <a routerLink="/regime-identification">
-      <span class="material-icons">account_tree</span>
-      Identify Regimes
-    </a>
-    <a routerLink="/regime-rating">
-      <span class="material-icons">grading</span>
-      Rate Regimes
-    </a>
-    <a routerLink="/mobilization-metaphors">
-      <span class="material-icons">emoji_objects</span>
-      Mobilization Metaphors
-    </a>
-  </div>
 
-  <div class="dashboard-content">
+    <a 
+      routerLink="/metaphor-identification" 
+      [class.active-link]="isActive('metaphor-identification')"
+      (click)="stageService.setStage('metaphor-identification')"
+    >
+      <span class="material-icons">psychology</span>
+      <span class="link-text">Detect &amp; Classify Metaphors</span>
+    </a>
+
+    <a 
+      routerLink="/scenario-identification" 
+      [class.active-link]="isActive('scenario-identification')"
+      (click)="stageService.setStage('scenario-identification')"
+    >
+      <span class="material-icons">search</span>
+      <span class="link-text">Identify Scenarios</span>
+    </a>
+
+    <a 
+      routerLink="/regime-identification"
+      [class.active-link]="isActive('regime-identification')"
+      (click)="stageService.setStage('regime-identification')"
+    >
+      <span class="material-icons">account_tree</span>
+      <span class="link-text">Identify Regimes</span>
+    </a>
+
+    <a 
+      routerLink="/regime-rating"
+      [class.active-link]="isActive('regime-rating')"
+      (click)="stageService.setStage('regime-rating')"
+    >
+      <span class="material-icons">grading</span>
+      <span class="link-text">Rate Regimes</span>
+    </a>
+
+    <a 
+      routerLink="/mobilization-metaphors"
+      [class.active-link]="isActive('mobilization-metaphors')"
+      (click)="stageService.setStage('mobilization-metaphors')"
+    >
+      <span class="material-icons">emoji_objects</span>
+      <span class="link-text">Mobilization Metaphors</span>
+    </a>
+  </nav>
+
+  <!-- Zona de contenido a la derecha -->
+  <section class="dashboard-content">
     <router-outlet></router-outlet>
-  </div>
+  </section>
 </div>

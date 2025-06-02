@@ -1,1 +1,98 @@
-<p>document-upload works!</p>
+<section class="upload-section">
+  <h2 class="upload-title">Upload the file you wish to process</h2>
+
+  <!-- FILE PICKER -->
+  <div class="file-picker-row">
+    <label class="file-picker-label">File:</label>
+    <input
+      #fileInput
+      type="file"
+      accept=".txt"
+      (change)="onFileSelected($event)"
+      hidden
+    />
+    <mat-form-field appearance="outline" class="file-path-field">
+      <input
+        matInput
+        type="text"
+        [value]="selectedFileName"
+        placeholder="No file selected"
+        readonly
+      />
+    </mat-form-field>
+    <button mat-stroked-button color="primary" (click)="onSelectFileClick()">
+      <span class="material-icons">folder_open</span>
+      <span>Select</span>
+    </button>
+  </div>
+
+  <!-- TOKENS CONFIG -->
+  <div class="tokens-config-row" [formGroup]="form">
+    <mat-form-field appearance="outline">
+      <mat-label>Tokens per Prompt</mat-label>
+      <input
+        matInput
+        type="number"
+        formControlName="promptTokens"
+        min="100"
+        max="500"
+      />
+      <mat-hint>Min 100 – Max 500</mat-hint>
+      <mat-error *ngIf="promptTokensControl?.hasError('required')">
+        Required
+      </mat-error>
+      <mat-error *ngIf="promptTokensControl?.hasError('min') || promptTokensControl?.hasError('max')">
+        Invalid range
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Tokens per Batch</mat-label>
+      <input
+        matInput
+        type="number"
+        formControlName="batchTokens"
+        min="1000"
+        max="3000"
+      />
+      <mat-hint>Min 1000 – Max 3000</mat-hint>
+      <mat-error *ngIf="batchTokensControl?.hasError('required')">
+        Required
+      </mat-error>
+      <mat-error *ngIf="batchTokensControl?.hasError('min') || batchTokensControl?.hasError('max')">
+        Invalid range
+      </mat-error>
+    </mat-form-field>
+  </div>
+
+  <!-- BOTÓN PROCESAR -->
+  <div class="process-button-row">
+    <button
+      mat-raised-button
+      color="accent"
+      (click)="onProcess()"
+      [disabled]="!form.valid || !hasFileSelected"
+    >
+      <span class="material-icons">play_arrow</span>
+      <span>Process</span>
+    </button>
+  </div>
+
+  <!-- BARRA DE PROGRESO -->
+  <div class="progress-row" *ngIf="progressValue !== 0">
+    <mat-progress-bar
+      mode="determinate"
+      [value]="progressValue"
+    ></mat-progress-bar>
+    <span class="progress-text">{{ progressValue }}%</span>
+  </div>
+
+  <!-- MENSAJE DE ESTADO -->
+  <div class="status-row" *ngIf="statusMessage">
+    <mat-icon *ngIf="!isError" class="status-icon success-icon">check_circle</mat-icon>
+    <mat-icon *ngIf="isError"  class="status-icon error-icon">error</mat-icon>
+    <span [ngClass]="{'error-text': isError, 'success-text': !isError}">
+      {{ statusMessage }}
+    </span>
+  </div>
+</section>

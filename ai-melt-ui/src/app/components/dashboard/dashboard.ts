@@ -6,6 +6,7 @@ import { MatToolbarModule }           from '@angular/material/toolbar';
 import { MatListModule }              from '@angular/material/list';
 import { MatIconModule }              from '@angular/material/icon';
 import { MatButtonModule }            from '@angular/material/button';
+import { StageService }   from '../../services/stage.service';
 
 interface Step {
   label: string;
@@ -29,6 +30,12 @@ interface Step {
   styleUrls: ['./dashboard.scss']
 })
 export class Dashboard {
+  currentStage: string = 'document-upload';
+  constructor(public stageService: StageService) {
+    this.stageService.currentStage$.subscribe(stage => {
+      this.currentStage = stage;
+    });
+  }
   steps: Step[] = [
     { label: '1. Upload Document',               route: '/document-upload',         enabled: true  },
     { label: '2. Detect & Classify Metaphors',   route: '/metaphor-identification', enabled: false },
@@ -43,6 +50,11 @@ export class Dashboard {
       // either use router.navigateByUrl or [routerLink] in template
       window.location.href = step.route; // or inject Router and call navigateByUrl
     }
+  }
+
+  // Método auxiliar para comparar la etapa actual y devolver clase CSS
+  isActive(stage: string): boolean {
+    return this.currentStage === stage;
   }
 
   /** 

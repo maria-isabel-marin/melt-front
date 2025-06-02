@@ -1,20 +1,89 @@
-.dashboard-container {
-  height: 100vh;
+.dashboard-wrapper {
+  display: flex;
+  height: 100%;
+  min-height: calc(100vh - 64px - 48px); 
+  /* Para que el sider quede entre el header y el footer */
 }
 
+/* --------------------- Menú lateral --------------------- */
 .dashboard-sidenav {
-  width: 240px;
+  width: 240px;                  /* Ancho fijo del sidebar */
+  background-color: #0A2D6D;     /* Azul profundo */
+  color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 0.5rem;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+  overflow-y: auto;
 }
 
+.dashboard-sidenav .sidenav-title {
+  margin: 0 0 1.5rem 0;
+  padding: 0.5rem 1rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+/* Enlaces del sidebar */
+.dashboard-sidenav a {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.25rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #FFFFFF;
+  border-radius: 4px;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+
+  .material-icons {
+    font-size: 1.25rem;
+  }
+}
+.dashboard-sidenav a:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: translateX(4px);
+}
+
+/* Enlace activo (routerLinkActive="active-link") */
+.dashboard-sidenav a.active-link {
+  background-color: #1E90FF; /* Azul medio para destacar el link activo */
+}
+.dashboard-sidenav a.active-link .link-text,
+.dashboard-sidenav a.active-link .material-icons {
+  color: #FFFFFF;
+}
+
+/* --------------------- Zona de contenido --------------------- */
 .dashboard-content {
-  padding: 16px;
+  flex: 1;
+  background-color: #FFFFFF;   /* Fondo blanco */
+  padding: 2rem;
+  overflow-y: auto;
 }
 
-.mat-list-item.disabled {
-  opacity: 0.4;
-  cursor: default;
+.dashboard-sidenav a.active-link {
+  background-color: #1E90FF; /* Azul medio para resaltar enlace activo */
 }
 
-.mat-list-item.disabled mat-icon {
-  color: rgba(0,0,0,0.3);
+/* En pantallas pequeñas (< 800px), ocultar el sidebar y mostrarlo con “hamburger” (opcional):
+   Si no requieres esta lógica, puedes comentarla. */
+@media screen and (max-width: 800px) {
+  .dashboard-sidenav {
+    position: fixed;
+    left: -240px;
+    top: 64px; /* Debajo del header */
+    height: calc(100vh - 64px - 48px);
+    transition: left 0.3s ease;
+    z-index: 1000;
+  }
+  .dashboard-sidenav.open {
+    left: 0;
+  }
+  .dashboard-content {
+    padding-left: 0.5rem;
+  }
 }
