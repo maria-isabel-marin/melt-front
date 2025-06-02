@@ -21,7 +21,7 @@
   </div>
 
   <!-- 2) GRID de resultados (se activa después de que onProcess terminan) -->
-  <div class="table-container" *ngIf="metaphorsForPage.length > 0">
+  <div class="table-container">
     <table mat-table [dataSource]="dataSource" class="mat-elevation-z2">
       <!-- Checkbox columna -->
       <ng-container matColumnDef="select">

@@ -85,6 +85,8 @@ export class ConfirmDialog {
 export class MetaphorIdentification implements OnInit, AfterViewInit {
   /** Batches y configuración que vienen de DocumentUpload */
   batches: string[] = [];
+  /** Arreglo donde, para cada índice de página, guardamos el array de Metaphor ya procesadas. */
+  metaphorsByPage: Metaphor[][] = [];
   promptTokens = 100;
 
   /** El código generado en DocumentUpload */
@@ -134,6 +136,9 @@ export class MetaphorIdentification implements OnInit, AfterViewInit {
     // 3) Configurar totalPages
     this.totalPages = this.batches.length;
 
+    // Creamos un array vacío para cada página
+    this.metaphorsByPage = new Array(this.totalPages).fill(null).map(() => []);
+
     // 4) Inicializar dataSource vacío
     this.dataSource.data = [];
   }
@@ -154,7 +159,7 @@ export class MetaphorIdentification implements OnInit, AfterViewInit {
     }
     this.isProcessing = true;
     this.batchProgressValue = 0;
-    this.dataSource.data = [];
+    //this.dataSource.data = [];
     this.selection.clear();
 
     const batchText = this.batches[this.currentPageIndex];
@@ -174,9 +179,10 @@ export class MetaphorIdentification implements OnInit, AfterViewInit {
 
         // Inicializar confirmed=false en cada uno:
         received.forEach(m => m.confirmed = false);
+        this.metaphorsByPage[this.currentPageIndex] = received;
 
         // Ponerlos en la tabla
-        this.dataSource.data = received;
+        this.dataSource.data = this.metaphorsByPage[this.currentPageIndex];;
         this.isProcessing = false;
       }
     }, 200);
@@ -356,7 +362,7 @@ export class MetaphorIdentification implements OnInit, AfterViewInit {
   prevPage() {
     if (this.currentPageIndex > 0) {
       this.currentPageIndex--;
-      this.resetPageState();
+      this.restorePageData();
     }
   }
 
@@ -364,7 +370,24 @@ export class MetaphorIdentification implements OnInit, AfterViewInit {
   nextPage() {
     if (this.currentPageIndex < this.totalPages - 1) {
       this.currentPageIndex++;
-      this.resetPageState();
+      this.restorePageData();
+    }
+  }
+
+  // Método para recargar la data de la página actual
+  private restorePageData() {
+    // 1) Reset de estado de procesamiento:
+    this.isProcessing = false;
+    this.batchProgressValue = 0;
+    // 2) Limpiar selección:
+    this.selection.clear();
+
+    // 3) Si ya existían metáforas procesadas para esta página, las reinyecta:
+    if (Array.isArray(this.metaphorsByPage[this.currentPageIndex])) {
+      this.dataSource.data = this.metaphorsByPage[this.currentPageIndex];
+    } else {
+      // Si no existe, la dejamos vacía y permitimos re-procesar:
+      this.dataSource.data = [];
     }
   }
 
