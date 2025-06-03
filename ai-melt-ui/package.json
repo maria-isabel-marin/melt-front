@@ -9,7 +9,11 @@
     "test": "ng test"
   },
   "private": true,
-  "dependencies": {
+  "engines": {
+    "node": ">=20.11.0",
+    "npm": ">=10.0.0"
+  },
+    "dependencies": {
     "@angular/animations": "^20.0.0",
     "@angular/cdk": "^20.0.1",
     "@angular/common": "^20.0.0",
