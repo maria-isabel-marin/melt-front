@@ -13,10 +13,14 @@ import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angu
 import { MatPaginator, PageEvent, MatPaginatorModule } from '@angular/material/paginator';
 import { MatCardModule }      from '@angular/material/card';
 import { SelectionModel }     from '@angular/cdk/collections';
-
+import { HttpClientModule } from '@angular/common/http';
 import { StageService } from '../../services/stage.service';
 import { Metaphor }     from '../../models/metaphor.model';
-
+import { MetaphorService } from '../../services/metaphor.service';
+import {
+  ProcessBatchRequest,
+  MetaphorOut
+} from '../../models/metaphor-api.model';
 
 /** Componente para el diálogo de confirmación genérico */
 @Component({
@@ -122,7 +126,8 @@ export class MetaphorIdentification implements OnInit, AfterViewInit {
   constructor(
     private stageService: StageService,
     private snackBar: MatSnackBar,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private metaphorService: MetaphorService
   ) {}
 
   ngOnInit() {
@@ -157,35 +162,58 @@ export class MetaphorIdentification implements OnInit, AfterViewInit {
     if (this.batches.length === 0) {
       return;
     }
+
     this.isProcessing = true;
     this.batchProgressValue = 0;
-    //this.dataSource.data = [];
     this.selection.clear();
+    this.dataSource.data = [];
 
-    const batchText = this.batches[this.currentPageIndex];
+    // Construimos el body para la petición POST:
+    const body: ProcessBatchRequest = {
+      processing_code: this.processingCode,
+      batch_index: this.currentPageIndex,
+      batch_text: this.batches[this.currentPageIndex],
+      prompt_tokens: this.promptTokens
+    };
 
-    // Simulación de llamada "asíncrona" al backend (cada 200ms actualiza progreso)
-    const totalSteps = 10;
-    let step = 0;
+    // Iniciamos la llamada real al servicio
+    this.metaphorService.processBatch(body).subscribe({
+      next: (metaphors: MetaphorOut[]) => {
+        // Guardamos en el arreglo global paginado
+        this.metaphorsByPage[this.currentPageIndex] = metaphors;
 
-    const timer = setInterval(() => {
-      step++;
-      this.batchProgressValue = Math.round((step / totalSteps) * 100);
+        // Actualizamos la tabla con los datos recibidos
+        this.dataSource.data = metaphors;
 
-      if (step >= totalSteps) {
-        clearInterval(timer);
-        // Simula datos recibidos del backend:
-        const received = this.mockFetchMetaphors(batchText);
-
-        // Inicializar confirmed=false en cada uno:
-        received.forEach(m => m.confirmed = false);
-        this.metaphorsByPage[this.currentPageIndex] = received;
-
-        // Ponerlos en la tabla
-        this.dataSource.data = this.metaphorsByPage[this.currentPageIndex];;
+        // Marcamos progreso al 100% y liberamos el botón
+        this.batchProgressValue = 100;
         this.isProcessing = false;
+      },
+      error: (err) => {
+        console.error('[MetaphorIdentification] Error del servicio:', err);
+        this.snackBar.open(
+          'Error procesando el batch: ' + (err.error?.detail || err.message),
+          'Close',
+          { duration: 4000 }
+        );
+        this.isProcessing = false;
+        this.batchProgressValue = 0;
       }
-    }, 200);
+    });
+
+    // Opcional: simular un progress bar animado (0→80%) mientras llega la respuesta
+    const fakeSteps = 80;
+    let fakeCount = 0;
+    const fakeTimer = setInterval(() => {
+      fakeCount++;
+      this.batchProgressValue = Math.min(
+        80,
+        Math.round((fakeCount / fakeSteps) * 80)
+      );
+      if (fakeCount >= fakeSteps) {
+        clearInterval(fakeTimer);
+      }
+    }, 50);
   }
 
   /** Simulación de “fetch” desde el backend */

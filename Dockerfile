@@ -1,14 +1,16 @@
+# Fase 1: Build con límite de memoria explícito
+FROM node:20-alpine AS build
+
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY . .
+RUN node --max-old-space-size=4096 ./node_modules/@angular/cli/bin/ng build --configuration production
+
+# Fase 2: Servir con Nginx
 FROM nginx:alpine
-
-# Copia tu carpeta public/ en la carpeta de contenido web de Nginx
-COPY public/ /usr/share/nginx/html
-
-# Mantén la configuración por defecto de Nginx (no borramos nada)
-# El contenedor nginx:alpine ya expone el puerto 80 y tiene el CMD correcto.
-
-# (opcional) si quieres ver logs limpios:
-# RUN rm -rf /var/cache/apk/*
-
-# El CMD por defecto de la imagen nginx:alpine es:
-# CMD ["nginx", "-g", "daemon off;"]
-
+COPY --from=build /app/dist/ai-melt-ui /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
