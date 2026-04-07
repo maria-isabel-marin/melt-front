@@ -1,0 +1,51 @@
+<h2 mat-dialog-title>Add Document</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="dialog-form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Title *</mat-label>
+      <input matInput formControlName="title" placeholder="Document title">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Author</mat-label>
+      <input matInput formControlName="author" placeholder="Author name">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Language *</mat-label>
+      <mat-select formControlName="language">
+        <mat-option value="SPANISH">Spanish</mat-option>
+        <mat-option value="ENGLISH">English</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Document Type</mat-label>
+      <mat-select formControlName="documentType">
+        <mat-option value="">— None —</mat-option>
+        @for (type of documentTypes; track type.value) {
+          <mat-option [value]="type.value">{{ type.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Page Count</mat-label>
+      <input matInput type="number" formControlName="pageCount" placeholder="Number of pages">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Description</mat-label>
+      <textarea matInput formControlName="description" rows="2"></textarea>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-flat-button color="primary" (click)="save()" [disabled]="form.invalid || saving">
+    @if (saving) { <mat-spinner diameter="16" strokeWidth="2"></mat-spinner> }
+    Add Document
+  </button>
+</mat-dialog-actions>

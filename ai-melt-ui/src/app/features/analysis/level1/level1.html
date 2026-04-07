@@ -1,0 +1,114 @@
+@if (loading()) {
+  <div class="loading-center"><mat-spinner diameter="36"></mat-spinner></div>
+} @else if (status === 'PENDING') {
+  <div class="empty-state">
+    <mat-icon>auto_awesome</mat-icon>
+    <h3>Not yet processed</h3>
+    <p>Run Level 1 to identify primary metaphors using the MIPVU procedure.</p>
+  </div>
+} @else if (metaphors().length === 0) {
+  <div class="empty-state">
+    <mat-icon>search_off</mat-icon>
+    <h3>No metaphors found</h3>
+    <p>The analysis returned no primary metaphors.</p>
+  </div>
+} @else {
+  <div class="results-header">
+    <span class="count">{{ metaphors().length }} metaphor{{ metaphors().length !== 1 ? 's' : '' }} identified</span>
+  </div>
+
+  <mat-accordion multi>
+    @for (m of metaphors(); track m.id) {
+      <mat-expansion-panel class="metaphor-panel">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <span class="item-badge {{ m.itemStatus }}">{{ m.itemStatus.replace('_', ' ') }}</span>
+            <span class="expression">"{{ m.metaphoricalExpression }}"</span>
+          </mat-panel-title>
+          <mat-panel-description>
+            @if (m.conceptualMetaphor) {
+              <span class="conceptual">{{ m.conceptualMetaphor }}</span>
+            }
+            @if (m.page) { <span class="page">p.{{ m.page }}</span> }
+          </mat-panel-description>
+        </mat-expansion-panel-header>
+
+        <div class="metaphor-detail">
+          <div class="domain-row">
+            <div class="domain source">
+              <label>Source Domain</label>
+              <span>{{ m.sourceDomain ?? '—' }}</span>
+            </div>
+            <mat-icon class="arrow">arrow_forward</mat-icon>
+            <div class="domain target">
+              <label>Target Domain</label>
+              <span>{{ m.targetDomain ?? '—' }}</span>
+            </div>
+          </div>
+
+          @if (m.context) {
+            <div class="field">
+              <label>Context</label>
+              <blockquote>{{ m.context }}</blockquote>
+            </div>
+          }
+
+          @if (m.contextualMeaning || m.basicMeaning) {
+            <div class="meanings">
+              @if (m.contextualMeaning) {
+                <div class="field"><label>Contextual Meaning</label><p>{{ m.contextualMeaning }}</p></div>
+              }
+              @if (m.basicMeaning) {
+                <div class="field"><label>Basic Meaning</label><p>{{ m.basicMeaning }}</p></div>
+              }
+            </div>
+          }
+
+          @if (m.ontologicalMappings?.length) {
+            <div class="mappings">
+              <label>Ontological Mappings</label>
+              @for (om of m.ontologicalMappings; track om.id) {
+                <div class="mapping-row">
+                  <span class="source">{{ om.sourceElement }}</span>
+                  <mat-icon class="small-arrow">arrow_forward</mat-icon>
+                  <span class="target">{{ om.targetElement }}</span>
+                  @if (om.textualEvidence) {
+                    <span class="evidence">"{{ om.textualEvidence }}"</span>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          @if (m.epistemicMappings?.length) {
+            <div class="mappings">
+              <label>Epistemic Mappings</label>
+              @for (em of m.epistemicMappings; track em.id) {
+                <div class="mapping-row">
+                  <span class="source">{{ em.sourceRelation }}</span>
+                  <mat-icon class="small-arrow">arrow_forward</mat-icon>
+                  <span class="target">{{ em.targetInference }}</span>
+                  <span class="chip">{{ em.inferenceType }}</span>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Actions -->
+          <div class="item-actions">
+            <button mat-stroked-button color="primary"
+              (click)="setItemStatus(m.id, 'APPROVED')"
+              [disabled]="m.itemStatus === 'APPROVED'">
+              <mat-icon>check</mat-icon> Approve
+            </button>
+            <button mat-stroked-button color="warn"
+              (click)="setItemStatus(m.id, 'REJECTED')"
+              [disabled]="m.itemStatus === 'REJECTED'">
+              <mat-icon>close</mat-icon> Reject
+            </button>
+          </div>
+        </div>
+      </mat-expansion-panel>
+    }
+  </mat-accordion>
+}

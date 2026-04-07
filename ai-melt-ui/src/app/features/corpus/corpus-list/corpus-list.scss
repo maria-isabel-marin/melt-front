@@ -1,0 +1,56 @@
+.corpus-card {
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.2s;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+  }
+
+  .corpus-avatar {
+    background: #e8eaf6;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    mat-icon { color: #3949ab; }
+  }
+
+  mat-card-header {
+    display: flex;
+    align-items: flex-start;
+    .spacer { flex: 1; }
+  }
+
+  .description {
+    font-size: 13px;
+    color: #546e7a;
+    margin: 8px 0 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .meta-chip {
+    background: #e8eaf6;
+    color: #3949ab;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+  }
+
+  mat-card-footer {
+    padding: 8px 16px;
+    border-top: 1px solid #f0f0f0;
+    .date { font-size: 11px; color: #9e9e9e; }
+  }
+}

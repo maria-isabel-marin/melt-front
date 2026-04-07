@@ -1,0 +1,87 @@
+.breadcrumb {
+  margin-bottom: 16px;
+  .breadcrumb-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #546e7a;
+    text-decoration: none;
+    font-size: 13px;
+    &:hover { color: #1a237e; }
+    mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  }
+}
+
+.doc-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  h1 { margin: 0 0 8px; font-weight: 500; }
+
+  .doc-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #546e7a;
+
+    .lang-tag, .type-tag {
+      background: #e8eaf6;
+      color: #3949ab;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+  }
+}
+
+.init-panel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+
+  .provider-select {
+    width: 140px;
+  }
+}
+
+.pipeline-tabs {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+
+  ::ng-deep .mat-mdc-tab {
+    min-width: 140px;
+  }
+}
+
+.tab-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 0;
+
+  span:first-child { font-weight: 600; font-size: 14px; }
+  .tab-sub { font-size: 10px; color: #78909c; }
+  .status-badge { margin-top: 2px; }
+}
+
+.tab-content {
+  padding: 20px;
+}
+
+.level-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}

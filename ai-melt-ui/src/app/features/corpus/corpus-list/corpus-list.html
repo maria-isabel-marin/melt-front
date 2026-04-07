@@ -1,0 +1,69 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1>My Corpora</h1>
+    <button mat-flat-button color="primary" (click)="openCreateDialog()">
+      <mat-icon>add</mat-icon>
+      New Corpus
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-center">
+      <mat-spinner diameter="48"></mat-spinner>
+    </div>
+  } @else if (corpora().length === 0) {
+    <div class="empty-state">
+      <mat-icon>folder_open</mat-icon>
+      <h3>No corpora yet</h3>
+      <p>Create your first corpus to start analyzing documents.</p>
+      <button mat-flat-button color="primary" (click)="openCreateDialog()">
+        <mat-icon>add</mat-icon>
+        Create Corpus
+      </button>
+    </div>
+  } @else {
+    <div class="melt-card-grid">
+      @for (corpus of corpora(); track corpus.id) {
+        <mat-card class="corpus-card" (click)="openCorpus(corpus.id)">
+          <mat-card-header>
+            <div mat-card-avatar class="corpus-avatar">
+              <mat-icon>folder</mat-icon>
+            </div>
+            <mat-card-title>{{ corpus.name }}</mat-card-title>
+            <mat-card-subtitle>
+              {{ documentCount(corpus) }} document{{ documentCount(corpus) !== 1 ? 's' : '' }}
+            </mat-card-subtitle>
+            <span class="spacer"></span>
+            <button mat-icon-button [matMenuTriggerFor]="menu" (click)="$event.stopPropagation()">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #menu>
+              <button mat-menu-item (click)="deleteCorpus(corpus, $event)">
+                <mat-icon color="warn">delete</mat-icon>
+                Delete
+              </button>
+            </mat-menu>
+          </mat-card-header>
+
+          <mat-card-content>
+            @if (corpus.description) {
+              <p class="description">{{ corpus.description }}</p>
+            }
+            <div class="meta">
+              @if (corpus.discursiveCommunity) {
+                <span class="meta-chip">{{ corpus.discursiveCommunity }}</span>
+              }
+              @if (corpus.textualGenre) {
+                <span class="meta-chip">{{ corpus.textualGenre }}</span>
+              }
+            </div>
+          </mat-card-content>
+
+          <mat-card-footer>
+            <span class="date">Created {{ corpus.createdAt | date:'mediumDate' }}</span>
+          </mat-card-footer>
+        </mat-card>
+      }
+    </div>
+  }
+</div>
