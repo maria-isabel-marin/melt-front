@@ -1,0 +1,96 @@
+@if (loading()) {
+  <div class="loading-center"><mat-spinner diameter="36"></mat-spinner></div>
+} @else if (status === 'PENDING') {
+  <div class="empty-state">
+    <mat-icon>account_tree</mat-icon>
+    <h3>Level 3 must be approved first</h3>
+    <p>Approve metaphorical scenarios before identifying metaphor regimes.</p>
+  </div>
+} @else if (regimes().length === 0) {
+  <div class="empty-state">
+    <mat-icon>search_off</mat-icon>
+    <h3>No regimes yet</h3>
+    <p>Run Level 4 to group scenarios into coherent ideological metaphor regimes.</p>
+  </div>
+} @else {
+  <div class="results-header">
+    <span class="count">{{ regimes().length }} regime{{ regimes().length !== 1 ? 's' : '' }}</span>
+  </div>
+
+  <mat-accordion multi>
+    @for (r of regimes(); track r.id) {
+      <mat-expansion-panel class="regime-panel">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <span class="item-badge {{ r.itemStatus }}">{{ r.itemStatus.replace('_', ' ') }}</span>
+            <span class="name">{{ r.regimeName }}</span>
+          </mat-panel-title>
+          <mat-panel-description>
+            <span class="freq">freq: {{ r.aggregateFrequency }}</span>
+          </mat-panel-description>
+        </mat-expansion-panel-header>
+
+        <div class="regime-detail">
+          <!-- Core metaphors -->
+          @if (r.metaphors.length) {
+            <div class="section">
+              <label>Core Metaphors</label>
+              <div class="chips">
+                @for (m of r.metaphors; track $index) {
+                  <span class="metaphor-chip">{{ m }}</span>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Derived metaphors -->
+          @if (r.derivedMetaphors?.length) {
+            <div class="section">
+              <label>Derived Metaphors</label>
+              <div class="chips">
+                @for (dm of r.derivedMetaphors; track dm.id) {
+                  <span class="derived-chip">{{ dm.derivedMetaphor }}</span>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Value axis -->
+          @if (r.valueAxis) {
+            <div class="section">
+              <label>Value Axis: {{ r.valueAxis.axisName }}</label>
+              <div class="axis-row">
+                <div class="pole positive">
+                  <label>+ Positive</label>
+                  @for (p of r.valueAxis.positivePolarity; track $index) {
+                    <span class="pole-chip">{{ p }}</span>
+                  }
+                </div>
+                <div class="pole negative">
+                  <label>− Negative</label>
+                  @for (n of r.valueAxis.negativePolarity; track $index) {
+                    <span class="pole-chip">{{ n }}</span>
+                  }
+                </div>
+              </div>
+              @if (r.valueAxis.evidence) {
+                <p class="evidence">{{ r.valueAxis.evidence }}</p>
+              }
+            </div>
+          }
+
+          <div class="item-actions">
+            <button mat-stroked-button color="primary" (click)="setItemStatus(r.id, 'APPROVED')"
+              [disabled]="r.itemStatus === 'APPROVED'">
+              <mat-icon>check</mat-icon> Approve
+            </button>
+            <button mat-stroked-button color="warn" (click)="setItemStatus(r.id, 'REJECTED')"
+              [disabled]="r.itemStatus === 'REJECTED'">
+              <mat-icon>close</mat-icon> Reject
+            </button>
+          </div>
+        </div>
+      </mat-expansion-panel>
+    }
+  </mat-accordion>
+}
