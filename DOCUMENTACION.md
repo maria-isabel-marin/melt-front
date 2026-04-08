@@ -1,6 +1,6 @@
 # MELT — Documentación técnica base
 
-**Metaphor Extraction & Language Toolkit**
+**Metaphor Field-Loop Theory**
 Pipeline de análisis metafórico asistido por IA, basado en los frameworks MIPVU, Musolff y Valdivia.
 
 ---

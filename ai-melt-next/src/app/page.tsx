@@ -39,7 +39,7 @@ export default function LoginPage() {
           </div>
           <h1 className="text-3xl font-bold text-blue-900 tracking-tight">MELT</h1>
           <p className="text-xs text-gray-400 mt-1 italic">
-            Metaphor Extraction &amp; Language Toolkit
+            Metaphor Field-Loop Theory
           </p>
         </div>
 

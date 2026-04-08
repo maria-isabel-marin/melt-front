@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'MELT — Metaphor Extraction & Language Toolkit',
+  title: 'MELT — Metaphor Field-Loop Theory',
   description: 'AI-assisted metaphor analysis pipeline based on MIPVU, Musolff & Valdivia frameworks.',
 }
 
