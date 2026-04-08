@@ -65,35 +65,23 @@ export default function DocumentPage() {
     } catch { /* ignore */ }
   }, [])
 
+  // Load document + analysis (single effect)
   useEffect(() => {
-    Promise.all([documentApi.get(docId)])
-      .then(async ([d]) => {
-        setDoc(d)
-        // fetch or init analysis
-        try {
-          // try to get existing analysis from document
-          const docFull = await documentApi.get(docId)
-          if (docFull) setDoc(docFull)
-        } catch { /* ignore */ }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [docId])
-
-  // Load document with embedded analysis
-  useEffect(() => {
+    let cancelled = false
     const loadDoc = async () => {
       try {
         const d = await documentApi.get(docId)
+        if (cancelled) return
         setDoc(d)
         if (d.analysis) {
           const a = await analysisApi.get(d.analysis.id)
-          setAnalysis(a)
+          if (!cancelled) setAnalysis(a)
         }
       } catch { /* ignore */ }
-      finally { setLoading(false) }
+      finally { if (!cancelled) setLoading(false) }
     }
     loadDoc()
+    return () => { cancelled = true }
   }, [docId])
 
   // Poll when a level is PROCESSING
