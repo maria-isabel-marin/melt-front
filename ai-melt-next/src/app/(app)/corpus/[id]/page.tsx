@@ -27,8 +27,9 @@ export default function CorpusDetailPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [file, setFile] = useState<File | null>(null)
   const [form, setForm] = useState({
-    title: '', author: '', language: 'ENGLISH', documentType: '', pageCount: '', fileUrl: '',
+    title: '', author: '', language: 'SPANISH', documentType: '', pageCount: '', fileUrl: '', description: '',
   })
 
   useEffect(() => {
@@ -40,22 +41,27 @@ export default function CorpusDetailPage() {
 
   const handleCreate = async () => {
     if (!form.title.trim()) return
+    if (!file) {
+      alert('Please select a PDF or TXT file to process.')
+      return
+    }
     setCreating(true)
     try {
-      const doc = await documentApi.create({
+      const res = await documentApi.upload({
         corpusId: id,
         title: form.title.trim(),
+        file,
         author: form.author || undefined,
         language: form.language,
         documentType: form.documentType || undefined,
-        pageCount: form.pageCount ? Number(form.pageCount) : undefined,
-        fileUrl: form.fileUrl || undefined,
+        description: form.description || undefined,
       })
-      setDocs(prev => [doc, ...prev])
+      setDocs(prev => [res.document, ...prev])
       setShowCreate(false)
-      setForm({ title: '', author: '', language: 'ENGLISH', documentType: '', pageCount: '', fileUrl: '' })
+      setForm({ title: '', author: '', language: 'SPANISH', documentType: '', pageCount: '', fileUrl: '', description: '' })
+      setFile(null)
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Failed to add document')
+      alert(e instanceof Error ? e.message : 'Failed to upload and process document')
     } finally {
       setCreating(false)
     }
@@ -175,8 +181,27 @@ export default function CorpusDetailPage() {
       )}
 
       {/* Add Document Dialog */}
-      <Dialog open={showCreate} onClose={() => setShowCreate(false)} title="Add Document">
+      <Dialog open={showCreate} onClose={() => {
+        setShowCreate(false)
+        setFile(null)
+      }} title="Add Document">
         <DialogBody>
+          <div className="mb-4">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Document File (PDF/TXT) *</label>
+            <input
+              type="file"
+              accept=".pdf,.txt"
+              onChange={e => {
+                const selectedFile = e.target.files?.[0]
+                setFile(selectedFile || null)
+                if (selectedFile && !form.title.trim()) {
+                  const nameWithoutExt = selectedFile.name.replace(/\.[^/.]+$/, "")
+                  setForm(p => ({ ...p, title: nameWithoutExt.replace(/_/g, ' ') }))
+                }
+              }}
+              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-gray-200 rounded-lg p-2 bg-gray-50/50"
+            />
+          </div>
           <Input
             label="Title *"
             placeholder="Document title"
@@ -206,27 +231,20 @@ export default function CorpusDetailPage() {
               {DOC_TYPES.map(t => <option key={t} value={t}>{docTypeLabel(t)}</option>)}
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Page Count"
-              type="number"
-              min={1}
-              placeholder="e.g. 12"
-              value={form.pageCount}
-              onChange={e => setForm(p => ({ ...p, pageCount: e.target.value }))}
-            />
-            <Input
-              label="File URL"
-              placeholder="https://…"
-              value={form.fileUrl}
-              onChange={e => setForm(p => ({ ...p, fileUrl: e.target.value }))}
-            />
-          </div>
+          <Input
+            label="Description / Abstract"
+            placeholder="Brief description of the document contents"
+            value={form.description}
+            onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+          />
         </DialogBody>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-          <Button onClick={handleCreate} loading={creating} disabled={!form.title.trim()}>
-            Add Document
+          <Button variant="outline" onClick={() => {
+            setShowCreate(false)
+            setFile(null)
+          }}>Cancel</Button>
+          <Button onClick={handleCreate} loading={creating} disabled={!form.title.trim() || !file}>
+            Add and Process
           </Button>
         </DialogFooter>
       </Dialog>

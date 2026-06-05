@@ -55,9 +55,38 @@ export const documentApi = {
     corpusId: string; title: string; description?: string; author?: string;
     language: string; documentType?: string; pageCount?: number; fileUrl?: string
   }) => request<Document>('/documentos', { method: 'POST', body: JSON.stringify(data) }),
+  upload: (data: {
+    corpusId: string; title: string; file: File; author?: string;
+    language: string; documentType?: string; description?: string;
+  }) => {
+    const token = getToken()
+    const formData = new FormData()
+    formData.append('file', data.file)
+    formData.append('corpusId', data.corpusId)
+    formData.append('title', data.title)
+    formData.append('language', data.language)
+    if (data.author) formData.append('author', data.author)
+    if (data.documentType) formData.append('documentType', data.documentType)
+    if (data.description) formData.append('description', data.description)
+
+    return fetch(`${BASE}/documentos/upload`, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    }).then(async (res) => {
+      if (!res.ok) {
+        const msg = await res.text().catch(() => res.statusText)
+        throw new Error(msg || `HTTP ${res.status}`)
+      }
+      return res.json()
+    })
+  },
   delete: (id: string) => request<Document>(`/documentos/${id}`, { method: 'DELETE' }),
   initAnalysis: (id: string, aiProvider: AiProvider = 'CLAUDE') =>
     request<Analysis>(`/documentos/${id}/analisis`, { method: 'POST', body: JSON.stringify({ aiProvider }) }),
+  getLevel0: (id: string) => request<any>(`/documentos/${id}/level0`),
 }
 
 // ─── Analysis ─────────────────────────────────────────────────────────────────
