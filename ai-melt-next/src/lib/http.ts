@@ -11,7 +11,6 @@
  *  - Logging en desarrollo
  */
 
-import type { PipelineJob, PipelineResult } from '@/types/pipeline'
 import { getToken } from './auth'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -23,10 +22,24 @@ export interface HttpClientConfig {
   retryDelay?: number
 }
 
+//modificada
 export class HttpError extends Error {
   status: number
   statusText: string
   data?: unknown
+
+  constructor(
+    message: string,
+    status: number,
+    statusText: string,
+    data?: unknown
+  ) {
+    super(message)
+    this.name = 'HttpError'
+    this.status = status
+    this.statusText = statusText
+    this.data = data
+  }
 }
 
 // ─── Configuración ────────────────────────────────────────────────────────────
@@ -55,6 +68,7 @@ function isRetryableStatus(status: number): boolean {
 
 async function throwHttpError(response: Response): Promise<never> {
   let data: unknown
+
   try {
     const contentType = response.headers.get('content-type')
     if (contentType?.includes('application/json')) {
@@ -62,17 +76,20 @@ async function throwHttpError(response: Response): Promise<never> {
     } else {
       data = await response.text()
     }
-  } catch (err) {
+  } catch {
     // Ignorar errores al parsear body
   }
 
-  const error: HttpError = new Error(
-    data instanceof Object && 'message' in data ? String(data.message) : response.statusText
-  ) as HttpError
-  error.status = response.status
-  error.statusText = response.statusText
-  error.data = data
-  throw error
+  //modificada
+  const message =
+    data &&
+    typeof data === 'object' &&
+    'message' in data &&
+    typeof (data as { message?: unknown }).message === 'string'
+      ? (data as { message: string }).message
+      : response.statusText
+
+  throw new HttpError(message, response.status, response.statusText, data)
 }
 
 // ─── Cliente HTTP ─────────────────────────────────────────────────────────────
@@ -96,7 +113,7 @@ export class HttpClient {
 
     for (let attempt = 0; attempt <= this.config.retries; attempt++) {
       try {
-        return await this.fetchWithTimeout<T>(url, options, attempt)
+        return await this.fetchWithTimeout<T>(url, options)
       } catch (err) {
         lastError = err instanceof Error ? err : new Error(String(err))
 
@@ -113,7 +130,9 @@ export class HttpClient {
         // Esperar antes del siguiente intento
         const backoff = calculateBackoff(attempt, this.config.retryDelay)
         if (process.env.NODE_ENV === 'development') {
-          console.debug(`[HTTP] Reintentando en ${backoff}ms (intento ${attempt + 1}/${this.config.retries})`)
+          console.debug(
+            `[HTTP] Reintentando en ${backoff}ms (intento ${attempt + 1}/${this.config.retries})`
+          )
         }
         await sleep(backoff)
       }
@@ -127,8 +146,7 @@ export class HttpClient {
    */
   private async fetchWithTimeout<T>(
     url: string,
-    options: RequestInit,
-    attempt: number
+    options: RequestInit
   ): Promise<T> {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout)
@@ -139,7 +157,7 @@ export class HttpClient {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          ...(this.getAuthHeader()),
+          ...this.getAuthHeader(),
           ...options.headers,
         },
       })
@@ -152,7 +170,7 @@ export class HttpClient {
         return undefined as T
       }
 
-      return await response.json() as T
+      return (await response.json()) as T
     } finally {
       clearTimeout(timeoutId)
     }
@@ -235,7 +253,7 @@ export class HttpClient {
         await throwHttpError(response)
       }
 
-      return await response.json() as T
+      return (await response.json()) as T
     } finally {
       clearTimeout(timeoutId)
     }
@@ -245,12 +263,3 @@ export class HttpClient {
 // ─── Instancia Global ─────────────────────────────────────────────────────────
 
 export const httpClient = new HttpClient()
-
-// ─── Exportar tipo de error ───────────────────────────────────────────────────
-
-export type { HttpError }
-
-
-
-
-
