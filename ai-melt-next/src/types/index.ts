@@ -73,6 +73,53 @@ export interface Analysis extends AnalysisSummary {
   createdAt: string
 }
 
+// ─── Level 0 — Ingestion ─────────────────────────────────────────────────────
+
+export interface Level0Chapter {
+  name: string
+  start_page?: number
+  end_page?: number
+  sentence_count?: number
+  word_count?: number
+}
+
+export interface Level0Footnote {
+  page: number
+  text: string
+  chapter?: string
+}
+
+export interface Level0Sentence {
+  id: string
+  page?: number
+  chapter?: string
+  text: string
+  n_words?: number
+  n_chars?: number
+  tokens?: string[]
+  lemmas?: string[]
+  pos_tags?: string[]
+  entities?: string[]
+}
+
+export interface Level0Data {
+  title?: string
+  author?: string
+  language?: string
+  processed_at?: string
+  page_count?: number
+  pages_excluded?: number
+  pages_clean?: number
+  word_count?: number
+  token_count?: number
+  sentence_count?: number
+  footnote_count?: number
+  chapter_detection_method?: string
+  chapters?: Level0Chapter[]
+  footnotes?: Level0Footnote[]
+  sentences?: Level0Sentence[]
+}
+
 // ─── Level 1 — Primary Metaphors ─────────────────────────────────────────────
 
 export interface OntologicalMapping {
