@@ -20,6 +20,28 @@ export interface JwtPayload {
 
 // ─── Corpus ───────────────────────────────────────────────────────────────────
 
+export interface CorpusAnalysisConfig {
+  regexPatterns?: string
+  headersFooters?: string
+  pagesToExclude?: string
+  minLineLength?: number
+  inspectionMode?: string
+  inspectionSample?: number
+  inspectionPages?: string
+  inspectionChars?: number
+  inspectionPosition?: string
+  inspectionDocs?: string   // por ejemplo: 'none' | 'all' | 'doc1.pdf,doc2.pdf'
+  footnoteSample?: number
+  footnoteDocs?: string
+  minSentenceLength?: number
+  maxSentenceLength?: number
+  batchSize?: number
+  language?: string
+  corpusId?: string
+  documentMetadata?: string
+  outputDir?: string
+}
+
 export interface Corpus {
   id: string
   name: string
@@ -27,6 +49,7 @@ export interface Corpus {
   wordCount?: number
   discursiveCommunity?: string
   textualGenre?: string
+  analysisConfig?: CorpusAnalysisConfig
   createdAt: string
   updatedAt: string
   _count?: { documents: number }

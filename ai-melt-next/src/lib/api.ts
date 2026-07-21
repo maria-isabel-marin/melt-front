@@ -68,7 +68,8 @@ export const corpusApi = {
       body: JSON.stringify(data),
     }),
 
-  update: (id: string, data: Partial<{ name: string; description: string }>) =>
+  //update: (id: string, data: Partial<{ name: string; description: string }>) =>
+  update: (id: string, data: Partial<Pick<Corpus, 'name' | 'description' | 'analysisConfig'>>) =>
     request<Corpus>(`/corpus/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
