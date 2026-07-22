@@ -16,6 +16,23 @@ import type {
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api'
 
+export type Level0ProgressResponse = {
+  documentId: string
+  status: 'PENDING' | 'PROCESSING' | 'APPROVED' | 'FAILED'
+  currentStep: string | null
+  progress: number
+  message?: string
+  startedAt?: string
+  completedAt?: string
+  error?: string
+  steps: Array<{
+    key: string
+    label: string
+    status: 'pending' | 'running' | 'done' | 'error'
+    message?: string
+  }>
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken()
   const res = await fetch(`${BASE}${path}`, {
@@ -36,8 +53,6 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json()
 }
 
-// ─── Auth ─────────────────────────────────────────────────────────────────────
-
 export const authApi = {
   createGuest: () =>
     request<{ token: string; user: { id: string; isGuest: boolean } }>('/auth/guest', {
@@ -49,8 +64,6 @@ export const authApi = {
       method: 'POST',
     }),
 }
-
-// ─── Corpus ───────────────────────────────────────────────────────────────────
 
 export const corpusApi = {
   list: () => request<Corpus[]>('/corpus'),
@@ -80,8 +93,6 @@ export const corpusApi = {
     }),
 }
 
-// ─── Documents ───────────────────────────────────────────────────────────────
-
 export const documentApi = {
   list: (corpusId: string) =>
     request<DocumentSummary[]>(`/documentos?corpusId=${corpusId}`),
@@ -92,46 +103,54 @@ export const documentApi = {
   getLevel0: (id: string) =>
     request<Level0Data>(`/documentos/${id}/level0`),
 
+  getLevel0Progress: (id: string) =>
+    request<Level0ProgressResponse>(`/documentos/${id}/level0/progress`),
+
   uploadLevel0: async (payload: {
-  corpusId: string
-  title: string
-  file: File
-  author?: string
-  language?: string
-  documentType?: string
-  description?: string
-  pageCount?: number
-}) => {
-  const token = getToken()
-  const formData = new FormData()
+    corpusId: string
+    title: string
+    file: File
+    author?: string
+    language?: string
+    documentType?: string
+    description?: string
+    pageCount?: number
+  }): Promise<DocumentSummary> => {
+    const token = getToken()
+    const formData = new FormData()
 
-  formData.append('file', payload.file)
-  formData.append('corpusId', payload.corpusId)
-  formData.append('title', payload.title)
+    formData.append('file', payload.file)
+    formData.append('corpusId', payload.corpusId)
+    formData.append('title', payload.title)
 
-  if (payload.author) formData.append('author', payload.author)
-  if (payload.language) formData.append('language', payload.language)
-  if (payload.documentType) formData.append('documentType', payload.documentType)
-  if (payload.description) formData.append('description', payload.description)
-  if (typeof payload.pageCount === 'number') {
-    formData.append('pageCount', String(payload.pageCount))
-  }
+    if (payload.author) formData.append('author', payload.author)
+    if (payload.language) formData.append('language', payload.language)
+    if (payload.documentType) formData.append('documentType', payload.documentType)
+    if (payload.description) formData.append('description', payload.description)
+    if (typeof payload.pageCount === 'number') {
+      formData.append('pageCount', String(payload.pageCount))
+    }
 
-  const res = await fetch(`${BASE}/documentos/upload`, {
+    const res = await fetch(`${BASE}/documentos/upload`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    })
+
+    if (!res.ok) {
+      const msg = await res.text().catch(() => res.statusText)
+      throw new Error(msg || `HTTP ${res.status}`)
+    }
+
+    return res.json()
+  },
+
+  processLevel0: (id: string) =>
+  request<{ started: true }>(`/documentos/${id}/level0/process`, {
     method: 'POST',
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: formData,
-  })
-
-  if (!res.ok) {
-    const msg = await res.text().catch(() => res.statusText)
-    throw new Error(msg || `HTTP ${res.status}`)
-  }
-
-  return res.json()
-},
+  }),
 
   create: (data: {
     corpusId: string
@@ -159,8 +178,6 @@ export const documentApi = {
       body: JSON.stringify({ aiProvider }),
     }),
 }
-
-// ─── Analysis ─────────────────────────────────────────────────────────────────
 
 export const analysisApi = {
   get: (id: string) =>

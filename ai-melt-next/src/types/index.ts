@@ -83,10 +83,53 @@ export interface Level0Chapter {
   word_count?: number
 }
 
-export interface Level0Footnote {
+export interface Level0ChapterRange {
+  title: string
+  start_page: number
+  end_page: number
+}
+
+export interface Level0ChapterDetection {
+  method?: string
+  total_chapters: number
+  chapters: Level0ChapterRange[]
+}
+
+export interface Level0CleaningSample {
+  file?: string
   page: number
-  text: string
   chapter?: string
+  total_chars: number
+  start_excerpt: string
+  end_excerpt?: string
+  omitted_chars?: number
+}
+
+export interface Level0CleaningSummary {
+  pages_before?: number
+  pages_after?: number
+  chars_before?: number
+  chars_after?: number
+  reduction_percent?: number
+  extracted_footnotes?: number
+  sample_pages: Level0CleaningSample[]
+}
+
+export interface Level0CountItem {
+  label: string
+  count: number
+}
+
+export interface Level0FootnotesSummary {
+  total: number
+  pages_with_footnotes: number
+  chapters_with_footnotes: number
+  by_chapter: Level0CountItem[]
+}
+
+export interface Level0Entity {
+  text: string
+  label: string
 }
 
 export interface Level0Sentence {
@@ -99,7 +142,22 @@ export interface Level0Sentence {
   tokens?: string[]
   lemmas?: string[]
   pos_tags?: string[]
-  entities?: string[]
+  entities?: Level0Entity[]
+}
+
+export interface Level0NlpSummary {
+  processed_sentences: number
+  unique_lemmas: number
+  total_entities: number
+  top_lemmas: Level0CountItem[]
+  top_pos_tags: Level0CountItem[]
+  top_entity_labels: Level0CountItem[]
+}
+
+export interface Level0Footnote {
+  page: number
+  text: string
+  chapter?: string
 }
 
 export interface Level0Data {
@@ -114,10 +172,37 @@ export interface Level0Data {
   token_count?: number
   sentence_count?: number
   footnote_count?: number
+
   chapter_detection_method?: string
+  chapter_detection?: Level0ChapterDetection
+  cleaning_summary?: Level0CleaningSummary
+  footnotes_summary?: Level0FootnotesSummary
+  nlp_summary?: Level0NlpSummary
+
   chapters?: Level0Chapter[]
   footnotes?: Level0Footnote[]
   sentences?: Level0Sentence[]
+}
+
+export type Level0ProgressStatus = 'IDLE' | 'PROCESSING' | 'COMPLETED' | 'FAILED'
+export type Level0StepStatus = 'pending' | 'processing' | 'done' | 'error'
+
+export interface Level0ProgressStep {
+  key: string
+  label: string
+  status: Level0StepStatus
+  message?: string
+}
+
+export interface Level0Progress {
+  documentId: string
+  status: Level0ProgressStatus
+  progress: number
+  message?: string
+  error?: string
+  startedAt?: string
+  updatedAt?: string
+  steps: Level0ProgressStep[]
 }
 
 // ─── Level 1 — Primary Metaphors ─────────────────────────────────────────────
