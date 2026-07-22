@@ -58,7 +58,7 @@ export default function CorpusDetailPage() {
       .finally(() => setLoading(false))
   }, [id])
 
-  const handleUploadLevel0 = async () => {
+  const handleUploadDocument = async () => {
     if (!uploadFile || !uploadForm.title.trim()) return
 
     setUploading(true)
@@ -86,9 +86,9 @@ export default function CorpusDetailPage() {
         pageCount: '',
       })
 
-      alert('Document ingested successfully.')
+      alert('Document uploaded successfully. Process Level 0 from the document view.')
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Failed to ingest document')
+      alert(e instanceof Error ? e.message : 'Failed to upload document')
     } finally {
       setUploading(false)
     }
@@ -114,6 +114,7 @@ export default function CorpusDetailPage() {
 
     const a = doc.analysis
     const statuses = [
+      a.level0Status,
       a.level1Status,
       a.level2Status,
       a.level3Status,
@@ -187,7 +188,7 @@ export default function CorpusDetailPage() {
         <EmptyState
           icon={<FileText size={48} />}
           title="No documents yet"
-          description="Ingest your first document to start the MELT analysis pipeline."
+          description="Upload your first document to start the MELT workflow."
           action={
             <Button
               onClick={() => setShowUpload(true)}
@@ -342,7 +343,7 @@ export default function CorpusDetailPage() {
             Cancel
           </Button>
           <Button
-            onClick={handleUploadLevel0}
+            onClick={handleUploadDocument}
             loading={uploading}
             disabled={!uploadFile || !uploadForm.title.trim()}
             className="bg-blue-700 text-white hover:bg-blue-800"
