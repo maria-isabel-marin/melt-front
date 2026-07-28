@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/accordion";
 import { LevelWrapper } from "@/components/analysis/LevelWrapper";
 import { Level0 } from "@/components/analysis/Level0";
+import { Level0Visualization } from "@/components/analysis/Level0Visualization";
 import { Level1 } from "@/components/analysis/Level1";
 import { Level2 } from "@/components/analysis/Level2";
 import { Level3 } from "@/components/analysis/Level3";
@@ -32,6 +33,7 @@ import { ArrowLeft, FileText, SearchCheck, Zap } from "lucide-react";
 import { docTypeLabel, cn } from "@/lib/utils";
 
 type Tab = 0 | 1 | 2 | 3 | 4 | 5;
+type Level0View = "processing" | "visualization";
 
 const TAB_LABELS: Record<Tab, string> = {
   0: "Level 0 · Ingestion",
@@ -49,6 +51,7 @@ export default function DocumentPage() {
   const [doc, setDoc] = useState<Document | null>(null);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [tab, setTab] = useState<Tab>(0);
+  const [level0View, setLevel0View] = useState<Level0View>("processing");
   const [loading, setLoading] = useState(true);
   const [initLoading, setInitLoading] = useState(false);
   const [processing, setProcessing] = useState<number | null>(null);
@@ -222,6 +225,7 @@ export default function DocumentPage() {
         setProcessingLevel0(false);
         await loadDocument();
         await loadLevel0();
+        setLevel0View("processing");
       }
 
       if (progress?.status === "FAILED") {
@@ -365,80 +369,20 @@ export default function DocumentPage() {
       </button>
 
       {doc && (
-        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50">
-                <FileText size={18} className="text-blue-700" />
-              </div>
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+            {doc.title}
+          </h1>
 
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">{doc.title}</h1>
-
-                <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                  {doc.author && <span>{doc.author}</span>}
-                  {doc.documentType && (
-                    <span>{docTypeLabel(doc.documentType)}</span>
-                  )}
-                  <span className="capitalize">
-                    {doc.language?.toLowerCase()}
-                  </span>
-                  {doc.pageCount && <span>{doc.pageCount} pages</span>}
-                  {doc.tokenCount && (
-                    <span>{doc.tokenCount.toLocaleString()} tokens</span>
-                  )}
-                </div>
-
-                {doc.description && (
-                  <p className="mt-1 max-w-3xl text-sm text-gray-500">
-                    {doc.description}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {!analysis && level0Ready && (
-              <Button
-                onClick={handleInitAnalysis}
-                loading={initLoading}
-                disabled={initLoading}
-              >
-                <Zap size={15} /> Initialize Levels 1–5
-              </Button>
-            )}
-          </div>
-
-          <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-            <div className="flex items-center gap-2 font-medium">
-              <SearchCheck size={16} />
-              Process Level 0 first
-            </div>
-            <p className="mt-1 text-blue-900/90">
-              Use the Level 0 tab to run preprocessing and validate chapter
-              detection, text cleaning, footnotes, and sentence segmentation
-              before launching metaphor analysis.
-            </p>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2 border-t border-gray-100 pt-4">
-            {([0, 1, 2, 3, 4, 5] as const).map((l) => (
-              <div
-                key={l}
-                className="flex items-center gap-1.5 text-xs text-gray-500"
-              >
-                <span>{l === 0 ? "N0" : `L${l}`}</span>
-                <LevelBadge status={getLevelStatus(l)} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {!level0Ready && !level0IsProcessing && (
-        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          Level 0 has not been processed yet. Run{" "}
-          <strong>Process Level 0</strong> from the Level 0 tab before
-          continuing with the rest of the workflow.
+          {!analysis && level0Ready && (
+            <Button
+              onClick={handleInitAnalysis}
+              loading={initLoading}
+              disabled={initLoading}
+            >
+              <Zap size={15} /> Initialize Levels 1–5
+            </Button>
+          )}
         </div>
       )}
 
@@ -562,6 +506,20 @@ export default function DocumentPage() {
               </div>
 
               {!level0Ready && !level0IsProcessing && (
+                <div className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-4 text-sm text-blue-900">
+                  <div className="flex items-center gap-2 font-medium">
+                    <SearchCheck size={16} />
+                    Process Level 0 first
+                  </div>
+                  <p className="mt-1 text-blue-900/90">
+                    Run preprocessing and validate chapter detection, text
+                    cleaning, footnotes, and sentence segmentation before
+                    launching metaphor analysis.
+                  </p>
+                </div>
+              )}
+
+              {!level0Ready && !level0IsProcessing && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
                   <h3 className="text-base font-semibold text-amber-900">
                     Level 0 pending
@@ -659,16 +617,59 @@ export default function DocumentPage() {
               )}
 
               {level0Ready && (
-                <Level0
-                  data={level0}
-                  loading={level0Loading}
-                  error={
-                    level0Error.includes("No processed data found")
-                      ? ""
-                      : level0Error
-                  }
-                  onRefresh={loadLevel0}
-                />
+                <div className="space-y-6">
+                  <div className="inline-flex rounded-xl border border-gray-200 bg-gray-50 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setLevel0View("processing")}
+                      className={cn(
+                        "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                        level0View === "processing"
+                          ? "bg-white text-blue-700 shadow-sm"
+                          : "text-gray-500 hover:text-gray-800",
+                      )}
+                    >
+                      Processing
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLevel0View("visualization")}
+                      className={cn(
+                        "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                        level0View === "visualization"
+                          ? "bg-white text-blue-700 shadow-sm"
+                          : "text-gray-500 hover:text-gray-800",
+                      )}
+                    >
+                      Visualization
+                    </button>
+                  </div>
+
+                  {level0View === "processing" && (
+                    <Level0
+                      data={level0}
+                      loading={level0Loading}
+                      error={
+                        level0Error.includes("No processed data found")
+                          ? ""
+                          : level0Error
+                      }
+                      onRefresh={loadLevel0}
+                    />
+                  )}
+
+                  {level0View === "visualization" && (
+                    <Level0Visualization
+                      data={level0}
+                      loading={level0Loading}
+                      error={
+                        level0Error.includes("No processed data found")
+                          ? ""
+                          : level0Error
+                      }
+                    />
+                  )}
+                </div>
               )}
             </div>
           )}
