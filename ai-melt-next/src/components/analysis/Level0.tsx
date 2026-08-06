@@ -3,6 +3,7 @@
 import type { Level0Data } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/accordion'
+import { useI18n } from '@/components/i18n/I18nProvider'
 import {
   RefreshCw,
   BookOpen,
@@ -97,9 +98,9 @@ function Chip({
   )
 }
 
-function formatNumber(value?: number | null) {
+function formatNumber(value: number | null | undefined, locale: 'es' | 'en') {
   if (typeof value !== 'number') return '—'
-  return value.toLocaleString()
+  return value.toLocaleString(locale === 'es' ? 'es-ES' : 'en-US')
 }
 
 function truncate(text?: string | null, max = 100) {
@@ -108,6 +109,8 @@ function truncate(text?: string | null, max = 100) {
 }
 
 export function Level0({ data, loading, error, onRefresh }: Props) {
+  const { t, locale } = useI18n()
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -127,7 +130,7 @@ export function Level0({ data, loading, error, onRefresh }: Props) {
   if (!data) {
     return (
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-        No Level 0 data is available for this document yet.
+        {t('level0ProcessingView.noData')}
       </div>
     )
   }
@@ -142,9 +145,7 @@ export function Level0({ data, loading, error, onRefresh }: Props) {
         }))
 
   const totalChapters =
-    data.chapter_detection?.total_chapters ??
-    chapterRows.length ??
-    0
+    data.chapter_detection?.total_chapters ?? chapterRows.length ?? 0
 
   const pagesBefore = data.cleaning_summary?.pages_before ?? data.page_count ?? 0
   const pagesAfter = data.cleaning_summary?.pages_after ?? data.pages_clean ?? 0
@@ -159,25 +160,27 @@ export function Level0({ data, loading, error, onRefresh }: Props) {
 
   const footnoteSample = (data.footnotes ?? []).slice(0, 3)
   const sentenceSample = (data.sentences ?? []).slice(0, 3)
+  const method = data.chapter_detection?.method || data.chapter_detection_method || 'unknown'
+  const translatedMethod = t(`level0ProcessingView.methods.${method}`)
+  const methodLabel = translatedMethod.startsWith('level0ProcessingView.methods.')
+    ? method
+    : translatedMethod
 
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 rounded-xl border border-blue-100 bg-blue-50 p-4">
         <div>
           <h2 className="text-base font-semibold text-blue-900">
-            Level 0 quality review
+            {t('level0ProcessingView.qualityTitle')}
           </h2>
           <p className="mt-1 text-sm text-blue-900/80">
-            Validate chapter detection, cleaning, footnotes, sentence segmentation,
-            and linguistic preprocessing before continuing with Levels 1–5.
+            {t('level0ProcessingView.qualityDescription')}
           </p>
 
-          {(data.chapter_detection?.method || data.chapter_detection_method) && (
+          {method && (
             <p className="mt-2 text-xs text-blue-800">
-              Chapter detection method:{' '}
-              <strong>
-                {data.chapter_detection?.method || data.chapter_detection_method}
-              </strong>
+              {t('level0ProcessingView.chapterMethod')}{' '}
+              <strong>{methodLabel}</strong>
             </p>
           )}
         </div>
@@ -185,74 +188,42 @@ export function Level0({ data, loading, error, onRefresh }: Props) {
         {onRefresh && (
           <Button variant="outline" onClick={onRefresh}>
             <RefreshCw size={14} />
-            Refresh
+            {t('common.refresh')}
           </Button>
         )}
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
-        <StatCard
-          label="Pages"
-          value={data.page_count ?? 0}
-          icon={<FileText size={16} />}
-        />
-        <StatCard
-          label="Clean pages"
-          value={data.pages_clean ?? 0}
-          icon={<BookOpen size={16} />}
-        />
-        <StatCard
-          label="Excluded pages"
-          value={data.pages_excluded ?? 0}
-          icon={<Layers3 size={16} />}
-        />
-        <StatCard
-          label="Sentences"
-          value={data.sentence_count ?? 0}
-          icon={<MessageSquareText size={16} />}
-        />
-        <StatCard
-          label="Words"
-          value={data.word_count ?? 0}
-          icon={<ListTree size={16} />}
-        />
-        <StatCard
-          label="Footnotes"
-          value={data.footnote_count ?? 0}
-          icon={<MessageSquareText size={16} />}
-        />
+        <StatCard label={t('level0ProcessingView.stats.pages')} value={data.page_count ?? 0} icon={<FileText size={16} />} />
+        <StatCard label={t('level0ProcessingView.stats.cleanPages')} value={data.pages_clean ?? 0} icon={<BookOpen size={16} />} />
+        <StatCard label={t('level0ProcessingView.stats.excludedPages')} value={data.pages_excluded ?? 0} icon={<Layers3 size={16} />} />
+        <StatCard label={t('level0ProcessingView.stats.sentences')} value={data.sentence_count ?? 0} icon={<MessageSquareText size={16} />} />
+        <StatCard label={t('level0ProcessingView.stats.words')} value={data.word_count ?? 0} icon={<ListTree size={16} />} />
+        <StatCard label={t('level0ProcessingView.stats.footnotes')} value={data.footnote_count ?? 0} icon={<MessageSquareText size={16} />} />
       </div>
 
       <Section
-        title="Chapter detection"
-        description="Detected chapters with start and end pages."
+        title={t('level0ProcessingView.chapterDetection.title')}
+        description={t('level0ProcessingView.chapterDetection.description')}
       >
         <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <MiniMetric
-            label="Detection method"
-            value={data.chapter_detection?.method || data.chapter_detection_method || '—'}
-          />
-          <MiniMetric
-            label="Total chapters"
-            value={totalChapters}
-          />
+          <MiniMetric label={t('level0ProcessingView.chapterDetection.method')} value={methodLabel} />
+          <MiniMetric label={t('level0ProcessingView.chapterDetection.total')} value={totalChapters} />
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-left text-gray-600">
-                <th className="px-4 py-3">Chapter</th>
-                <th className="px-4 py-3">Start</th>
-                <th className="px-4 py-3">End</th>
+                <th className="px-4 py-3">{t('common.chapter')}</th>
+                <th className="px-4 py-3">{t('common.start')}</th>
+                <th className="px-4 py-3">{t('common.end')}</th>
               </tr>
             </thead>
             <tbody>
-              {chapterRows.map((chapter, idx) => (
-                <tr key={`${chapter.title}-${idx}`} className="border-t border-gray-100">
-                  <td className="px-4 py-3 font-medium text-gray-900">
-                    {truncate(chapter.title, 100)}
-                  </td>
+              {chapterRows.map((chapter, index) => (
+                <tr key={`${chapter.title}-${index}`} className="border-t border-gray-100">
+                  <td className="px-4 py-3 font-medium text-gray-900">{truncate(chapter.title, 100)}</td>
                   <td className="px-4 py-3 text-gray-600">{chapter.start_page ?? '—'}</td>
                   <td className="px-4 py-3 text-gray-600">{chapter.end_page ?? '—'}</td>
                 </tr>
@@ -261,7 +232,7 @@ export function Level0({ data, loading, error, onRefresh }: Props) {
               {chapterRows.length === 0 && (
                 <tr>
                   <td colSpan={3} className="px-4 py-6 text-center text-gray-500">
-                    No chapters detected.
+                    {t('level0ProcessingView.chapterDetection.noChapters')}
                   </td>
                 </tr>
               )}
@@ -271,42 +242,33 @@ export function Level0({ data, loading, error, onRefresh }: Props) {
       </Section>
 
       <Section
-        title="Cleaning summary"
-        description="Compact overview of cleaning results."
+        title={t('level0ProcessingView.cleaning.title')}
+        description={t('level0ProcessingView.cleaning.description')}
       >
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
-          <MiniMetric label="Pages before" value={formatNumber(pagesBefore)} />
-          <MiniMetric label="Pages after" value={formatNumber(pagesAfter)} />
-          <MiniMetric label="Chars before" value={formatNumber(charsBefore)} />
-          <MiniMetric label="Chars after" value={formatNumber(charsAfter)} />
-          <MiniMetric label="Reduction" value={reduction} />
-          <MiniMetric label="Footnotes extracted" value={formatNumber(extractedFootnotes)} />
+          <MiniMetric label={t('level0ProcessingView.cleaning.pagesBefore')} value={formatNumber(pagesBefore, locale)} />
+          <MiniMetric label={t('level0ProcessingView.cleaning.pagesAfter')} value={formatNumber(pagesAfter, locale)} />
+          <MiniMetric label={t('level0ProcessingView.cleaning.charsBefore')} value={formatNumber(charsBefore, locale)} />
+          <MiniMetric label={t('level0ProcessingView.cleaning.charsAfter')} value={formatNumber(charsAfter, locale)} />
+          <MiniMetric label={t('level0ProcessingView.cleaning.reduction')} value={reduction} />
+          <MiniMetric label={t('level0ProcessingView.cleaning.footnotesExtracted')} value={formatNumber(extractedFootnotes, locale)} />
         </div>
       </Section>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Section
-          title="Footnotes summary"
-          description="Extracted footnotes overview and validation sample."
+          title={t('level0ProcessingView.footnotes.title')}
+          description={t('level0ProcessingView.footnotes.description')}
         >
           <div className="space-y-5">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <MiniMetric
-                label="Total"
-                value={formatNumber(data.footnotes_summary?.total ?? data.footnote_count)}
-              />
-              <MiniMetric
-                label="Pages with footnotes"
-                value={formatNumber(data.footnotes_summary?.pages_with_footnotes)}
-              />
-              <MiniMetric
-                label="Chapters with footnotes"
-                value={formatNumber(data.footnotes_summary?.chapters_with_footnotes)}
-              />
+              <MiniMetric label={t('common.total')} value={formatNumber(data.footnotes_summary?.total ?? data.footnote_count, locale)} />
+              <MiniMetric label={t('level0ProcessingView.footnotes.pagesWith')} value={formatNumber(data.footnotes_summary?.pages_with_footnotes, locale)} />
+              <MiniMetric label={t('level0ProcessingView.footnotes.chaptersWith')} value={formatNumber(data.footnotes_summary?.chapters_with_footnotes, locale)} />
             </div>
 
             <div>
-              <h4 className="mb-3 text-sm font-medium text-gray-900">By chapter</h4>
+              <h4 className="mb-3 text-sm font-medium text-gray-900">{t('common.byChapter')}</h4>
               <div className="space-y-2">
                 {(data.footnotes_summary?.by_chapter ?? []).slice(0, 6).map((item) => (
                   <div key={item.label} className="flex items-center justify-between gap-4 text-sm">
@@ -315,20 +277,19 @@ export function Level0({ data, loading, error, onRefresh }: Props) {
                   </div>
                 ))}
 
-                {(!data.footnotes_summary?.by_chapter ||
-                  data.footnotes_summary.by_chapter.length === 0) && (
-                  <p className="text-sm text-gray-500">No chapter distribution available.</p>
+                {(!data.footnotes_summary?.by_chapter || data.footnotes_summary.by_chapter.length === 0) && (
+                  <p className="text-sm text-gray-500">{t('level0ProcessingView.footnotes.noDistribution')}</p>
                 )}
               </div>
             </div>
 
             <div>
-              <h4 className="mb-3 text-sm font-medium text-gray-900">Sample</h4>
+              <h4 className="mb-3 text-sm font-medium text-gray-900">{t('common.sample')}</h4>
               <div className="space-y-3">
-                {footnoteSample.map((footnote, idx) => (
-                  <div key={`${footnote.page}-${idx}`} className="rounded-lg bg-gray-50 p-3">
+                {footnoteSample.map((footnote, index) => (
+                  <div key={`${footnote.page}-${index}`} className="rounded-lg bg-gray-50 p-3">
                     <div className="mb-1 text-xs font-medium text-gray-500">
-                      Page {footnote.page}
+                      {t('common.page')} {footnote.page}
                       {footnote.chapter ? ` · ${truncate(footnote.chapter, 60)}` : ''}
                     </div>
                     <p className="text-sm text-gray-800">{truncate(footnote.text, 150)}</p>
@@ -336,47 +297,32 @@ export function Level0({ data, loading, error, onRefresh }: Props) {
                 ))}
 
                 {footnoteSample.length === 0 && (
-                  <p className="text-sm text-gray-500">No footnotes were extracted.</p>
+                  <p className="text-sm text-gray-500">{t('level0ProcessingView.footnotes.noFootnotes')}</p>
                 )}
               </div>
             </div>
           </div>
         </Section>
 
-        <Section
-          title="NLP summary"
-          description="Linguistic preprocessing overview."
-        >
+        <Section title={t('level0ProcessingView.nlp.title')} description={t('level0ProcessingView.nlp.description')}>
           <div className="space-y-5">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <MiniMetric
-                label="Processed sentences"
-                value={formatNumber(data.nlp_summary?.processed_sentences ?? data.sentence_count)}
-              />
-              <MiniMetric
-                label="Unique lemmas"
-                value={formatNumber(data.nlp_summary?.unique_lemmas)}
-              />
-              <MiniMetric
-                label="Total entities"
-                value={formatNumber(data.nlp_summary?.total_entities)}
-              />
+              <MiniMetric label={t('level0ProcessingView.nlp.processedSentences')} value={formatNumber(data.nlp_summary?.processed_sentences ?? data.sentence_count, locale)} />
+              <MiniMetric label={t('level0ProcessingView.nlp.uniqueLemmas')} value={formatNumber(data.nlp_summary?.unique_lemmas, locale)} />
+              <MiniMetric label={t('level0ProcessingView.nlp.totalEntities')} value={formatNumber(data.nlp_summary?.total_entities, locale)} />
             </div>
 
             <div>
               <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-900">
                 <Tags size={14} />
-                Top lemmas
+                {t('level0ProcessingView.nlp.topLemmas')}
               </div>
               <div className="flex flex-wrap gap-2">
                 {(data.nlp_summary?.top_lemmas ?? []).slice(0, 15).map((item) => (
-                  <Chip key={item.label}>
-                    {item.label} · {item.count}
-                  </Chip>
+                  <Chip key={item.label}>{item.label} · {item.count}</Chip>
                 ))}
-                {(!data.nlp_summary?.top_lemmas ||
-                  data.nlp_summary.top_lemmas.length === 0) && (
-                  <p className="text-sm text-gray-500">No lemma data available.</p>
+                {(!data.nlp_summary?.top_lemmas || data.nlp_summary.top_lemmas.length === 0) && (
+                  <p className="text-sm text-gray-500">{t('level0ProcessingView.nlp.noLemmaData')}</p>
                 )}
               </div>
             </div>
@@ -384,13 +330,11 @@ export function Level0({ data, loading, error, onRefresh }: Props) {
             <div>
               <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-900">
                 <Braces size={14} />
-                Top POS tags
+                {t('level0ProcessingView.nlp.topPosTags')}
               </div>
               <div className="flex flex-wrap gap-2">
                 {(data.nlp_summary?.top_pos_tags ?? []).slice(0, 10).map((item) => (
-                  <Chip key={item.label} tone="blue">
-                    {item.label} · {item.count}
-                  </Chip>
+                  <Chip key={item.label} tone="blue">{item.label} · {item.count}</Chip>
                 ))}
               </div>
             </div>
@@ -398,13 +342,11 @@ export function Level0({ data, loading, error, onRefresh }: Props) {
             <div>
               <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-900">
                 <MessageSquareText size={14} />
-                Top entity labels
+                {t('level0ProcessingView.nlp.topEntityLabels')}
               </div>
               <div className="flex flex-wrap gap-2">
                 {(data.nlp_summary?.top_entity_labels ?? []).slice(0, 10).map((item) => (
-                  <Chip key={item.label} tone="green">
-                    {item.label} · {item.count}
-                  </Chip>
+                  <Chip key={item.label} tone="green">{item.label} · {item.count}</Chip>
                 ))}
               </div>
             </div>
@@ -413,40 +355,29 @@ export function Level0({ data, loading, error, onRefresh }: Props) {
       </div>
 
       <Section
-        title="Sentence segmentation"
-        description="Small validation sample of segmented sentences."
+        title={t('level0ProcessingView.segmentation.title')}
+        description={t('level0ProcessingView.segmentation.description')}
       >
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <MiniMetric
-              label="Total sentences"
-              value={formatNumber(data.sentence_count)}
-            />
-            <MiniMetric
-              label="Sample shown"
-              value={sentenceSample.length}
-            />
-            <MiniMetric
-              label="Processed"
-              value={formatNumber(data.nlp_summary?.processed_sentences ?? data.sentence_count)}
-            />
+            <MiniMetric label={t('level0ProcessingView.segmentation.totalSentences')} value={formatNumber(data.sentence_count, locale)} />
+            <MiniMetric label={t('level0ProcessingView.segmentation.sampleShown')} value={sentenceSample.length} />
+            <MiniMetric label={t('level0ProcessingView.segmentation.processed')} value={formatNumber(data.nlp_summary?.processed_sentences ?? data.sentence_count, locale)} />
           </div>
 
           <div className="space-y-3">
             {sentenceSample.map((sentence) => (
               <div key={sentence.id} className="rounded-lg border border-gray-100 bg-gray-50 p-4">
                 <div className="mb-1 text-xs font-medium text-gray-500">
-                  Page {sentence.page ?? '—'}
+                  {t('common.page')} {sentence.page ?? '—'}
                   {sentence.chapter ? ` · ${truncate(sentence.chapter, 70)}` : ''}
                 </div>
-                <p className="text-sm leading-relaxed text-gray-800">
-                  {truncate(sentence.text, 220)}
-                </p>
+                <p className="text-sm leading-relaxed text-gray-800">{truncate(sentence.text, 220)}</p>
               </div>
             ))}
 
             {sentenceSample.length === 0 && (
-              <p className="text-sm text-gray-500">No sentence sample available.</p>
+              <p className="text-sm text-gray-500">{t('level0ProcessingView.segmentation.noSample')}</p>
             )}
           </div>
         </div>
