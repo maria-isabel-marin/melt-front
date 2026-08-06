@@ -18,7 +18,7 @@ import type {
   LevelStatus,
   Level0Data,
 } from "@/types";
-import { LevelBadge } from "@/components/ui/badge";
+import { LocalizedLevelBadge } from "@/components/i18n/LocalizedLevelBadge";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/accordion";
 import { LevelWrapper } from "@/components/analysis/LevelWrapper";
@@ -30,23 +30,17 @@ import { Level3 } from "@/components/analysis/Level3";
 import { Level4 } from "@/components/analysis/Level4";
 import { Level5 } from "@/components/analysis/Level5";
 import { ArrowLeft, FileText, SearchCheck, Zap } from "lucide-react";
-import { docTypeLabel, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { useI18n } from "@/components/i18n/I18nProvider";
 
 type Tab = 0 | 1 | 2 | 3 | 4 | 5;
 type Level0View = "processing" | "visualization";
 
-const TAB_LABELS: Record<Tab, string> = {
-  0: "Level 0 · Ingestion",
-  1: "Level 1 · Metaphors",
-  2: "Level 2 · Conventional",
-  3: "Level 3 · Scenarios",
-  4: "Level 4 · Regimes",
-  5: "Level 5 · Narrative",
-};
 
 export default function DocumentPage() {
   const router = useRouter();
   const { id: corpusId, docId } = useParams<{ id: string; docId: string }>();
+  const { t, locale } = useI18n();
 
   const [doc, setDoc] = useState<Document | null>(null);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
@@ -70,6 +64,37 @@ export default function DocumentPage() {
   const [l3, setL3] = useState<MetaphoricalScenario[]>([]);
   const [l4, setL4] = useState<MetaphorRegime[]>([]);
   const [l5, setL5] = useState<CulturalNarrative | null>(null);
+
+  const tabLabels: Record<Tab, string> = {
+    0: t("documentPage.tabs.level0"),
+    1: t("documentPage.tabs.level1"),
+    2: t("documentPage.tabs.level2"),
+    3: t("documentPage.tabs.level3"),
+    4: t("documentPage.tabs.level4"),
+    5: t("documentPage.tabs.level5"),
+  };
+
+  const numberLocale = locale === "es" ? "es-CO" : "en-US";
+
+  const documentTypeLabel = (value?: string) =>
+    value ? t(`documentTypes.${value}`) : t("common.unknown");
+
+  const documentLanguageLabel = (value?: string) =>
+    value ? t(`documentLanguages.${value}`) : t("common.unknown");
+
+  const progressStepTitle = (key: string, fallback: string) => {
+    const translated = t(`progressSteps.${key}.title`);
+    return translated === `progressSteps.${key}.title`
+      ? fallback
+      : translated;
+  };
+
+  const progressStepDescription = (key: string) => {
+    const translated = t(`progressSteps.${key}.description`);
+    return translated === `progressSteps.${key}.description`
+      ? ""
+      : translated;
+  };
 
   const fetchAnalysis = useCallback(async (analysisId: string) => {
     const a = await analysisApi.get(analysisId);
@@ -116,12 +141,12 @@ export default function DocumentPage() {
     } catch (e: unknown) {
       setLevel0(null);
       setLevel0Error(
-        e instanceof Error ? e.message : "Failed to load Level 0 data",
+        e instanceof Error ? e.message : t("documentPage.level0LoadError"),
       );
     } finally {
       setLevel0Loading(false);
     }
-  }, [docId]);
+  }, [docId, t]);
 
   const loadLevel0Progress = useCallback(async () => {
     try {
@@ -190,7 +215,7 @@ export default function DocumentPage() {
           if (pollingRef.current) clearInterval(pollingRef.current);
           pollingRef.current = null;
 
-          if (tab > 0 && getLevelStatus(0) === "APPROVED") {
+          if (tab > 0 && a.level0Status === "APPROVED") {
             await loadLevelData(a.id, tab as Exclude<Tab, 0>);
           }
         }
@@ -209,7 +234,7 @@ export default function DocumentPage() {
   }, [analysis, fetchAnalysis, loadLevelData, tab]);
 
   useEffect(() => {
-    if (analysis && tab > 0 && getLevelStatus(0) === "APPROVED") {
+    if (analysis && tab > 0 && analysis.level0Status === "APPROVED") {
       loadLevelData(analysis.id, tab as Exclude<Tab, 0>);
     }
   }, [tab, analysis, loadLevelData]);
@@ -231,7 +256,7 @@ export default function DocumentPage() {
       if (progress?.status === "FAILED") {
         clearInterval(interval);
         setProcessingLevel0(false);
-        setLevel0Error(progress.error || "Level 0 processing failed");
+        setLevel0Error(progress.error || t("documentPage.level0Failed"));
       }
     }, 1500);
 
@@ -242,6 +267,7 @@ export default function DocumentPage() {
     loadLevel0Progress,
     loadDocument,
     loadLevel0,
+    t,
   ]);
 
   const handleInitAnalysis = async () => {
@@ -252,7 +278,7 @@ export default function DocumentPage() {
       const a = await documentApi.initAnalysis(doc.id);
       setAnalysis(a);
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Failed to initialize analysis");
+      alert(e instanceof Error ? e.message : t("documentPage.initializeError"));
     } finally {
       setInitLoading(false);
     }
@@ -270,7 +296,7 @@ export default function DocumentPage() {
       await loadLevel0Progress();
     } catch (e: unknown) {
       setProcessingLevel0(false);
-      alert(e instanceof Error ? e.message : "Failed to process Level 0");
+      alert(e instanceof Error ? e.message : t("documentPage.level0ProcessError"));
     }
   };
 
@@ -282,7 +308,7 @@ export default function DocumentPage() {
       await analysisApi.process(analysis.id, level);
       await fetchAnalysis(analysis.id);
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Failed to process");
+      alert(e instanceof Error ? e.message : t("documentPage.processError"));
     } finally {
       setProcessing(null);
     }
@@ -297,7 +323,7 @@ export default function DocumentPage() {
       await fetchAnalysis(analysis.id);
       await loadLevelData(analysis.id, level);
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Failed");
+      alert(e instanceof Error ? e.message : t("documentPage.approveError"));
     } finally {
       setApproving(null);
     }
@@ -311,7 +337,7 @@ export default function DocumentPage() {
       await analysisApi.approve(analysis.id, level);
       await fetchAnalysis(analysis.id);
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Failed");
+      alert(e instanceof Error ? e.message : t("documentPage.approveError"));
     } finally {
       setApproving(null);
     }
@@ -365,7 +391,7 @@ export default function DocumentPage() {
         onClick={() => router.push(`/corpus/${corpusId}`)}
         className="mb-6 flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-gray-700"
       >
-        <ArrowLeft size={16} /> Back to corpus
+        <ArrowLeft size={16} /> {t("documentPage.back")}
       </button>
 
       {doc && (
@@ -380,7 +406,7 @@ export default function DocumentPage() {
               loading={initLoading}
               disabled={initLoading}
             >
-              <Zap size={15} /> Initialize Levels 1–5
+              <Zap size={15} /> {t("documentPage.initializeLevels")}
             </Button>
           )}
         </div>
@@ -399,109 +425,108 @@ export default function DocumentPage() {
                   : "text-gray-500 hover:bg-gray-50 hover:text-gray-700",
               )}
             >
-              {TAB_LABELS[t]}
-              <LevelBadge status={getLevelStatus(t)} />
+              {tabLabels[t]}
+              <LocalizedLevelBadge status={getLevelStatus(t)} />
             </button>
           ))}
         </div>
 
         <div className="p-6">
           {tab === 0 && (
-            <div className="space-y-6">
-              <div className="rounded-xl border border-gray-200 bg-white p-5">
-                <h2 className="mb-4 text-base font-semibold text-gray-800">
-                  Document summary
-                </h2>
+            <div className="space-y-4">
+              <div className="rounded-xl border border-gray-200 bg-white px-5 py-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-base font-semibold text-gray-900">
+                      {t("documentPage.summary.title")}
+                    </h2>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      {t("documentPage.summary.description")}
+                    </p>
+                  </div>
 
-                <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
-                  {doc?.title && (
-                    <div>
-                      <span className="text-xs uppercase tracking-wide text-gray-400">
-                        Title
-                      </span>
-                      <p className="mt-0.5 text-gray-800">{doc.title}</p>
-                    </div>
-                  )}
+                </div>
 
-                  {doc?.author && (
-                    <div>
-                      <span className="text-xs uppercase tracking-wide text-gray-400">
-                        Author
-                      </span>
-                      <p className="mt-0.5 text-gray-800">{doc.author}</p>
-                    </div>
-                  )}
+                <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+                  <div className="rounded-lg bg-gray-50 px-3 py-2.5">
+                    <span className="text-[11px] uppercase tracking-wide text-gray-400">
+                      {t("documentPage.summary.author")}
+                    </span>
+                    <p className="mt-0.5 truncate text-sm font-medium text-gray-800">
+                      {doc?.author || t("common.unknown")}
+                    </p>
+                  </div>
 
-                  {doc?.documentType && (
-                    <div>
-                      <span className="text-xs uppercase tracking-wide text-gray-400">
-                        Type
-                      </span>
-                      <p className="mt-0.5 text-gray-800">
-                        {docTypeLabel(doc.documentType)}
-                      </p>
-                    </div>
-                  )}
+                  <div className="rounded-lg bg-gray-50 px-3 py-2.5">
+                    <span className="text-[11px] uppercase tracking-wide text-gray-400">
+                      {t("documentPage.summary.type")}
+                    </span>
+                    <p className="mt-0.5 truncate text-sm font-medium text-gray-800">
+                      {documentTypeLabel(doc?.documentType)}
+                    </p>
+                  </div>
 
-                  {doc?.language && (
-                    <div>
-                      <span className="text-xs uppercase tracking-wide text-gray-400">
-                        Language
-                      </span>
-                      <p className="mt-0.5 capitalize text-gray-800">
-                        {doc.language.toLowerCase()}
-                      </p>
-                    </div>
-                  )}
+                  <div className="rounded-lg bg-gray-50 px-3 py-2.5">
+                    <span className="text-[11px] uppercase tracking-wide text-gray-400">
+                      {t("documentPage.summary.language")}
+                    </span>
+                    <p className="mt-0.5 capitalize text-sm font-medium text-gray-800">
+                      {documentLanguageLabel(doc?.language)}
+                    </p>
+                  </div>
 
-                  {typeof doc?.pageCount === "number" && (
-                    <div>
-                      <span className="text-xs uppercase tracking-wide text-gray-400">
-                        Pages
-                      </span>
-                      <p className="mt-0.5 text-gray-800">{doc.pageCount}</p>
-                    </div>
-                  )}
+                  <div className="rounded-lg bg-gray-50 px-3 py-2.5">
+                    <span className="text-[11px] uppercase tracking-wide text-gray-400">
+                      {t("documentPage.summary.pages")}
+                    </span>
+                    <p className="mt-0.5 text-sm font-medium text-gray-800">
+                      {typeof doc?.pageCount === "number"
+                        ? doc.pageCount.toLocaleString(numberLocale)
+                        : "—"}
+                    </p>
+                  </div>
 
-                  {typeof doc?.tokenCount === "number" && (
-                    <div>
-                      <span className="text-xs uppercase tracking-wide text-gray-400">
-                        Tokens
-                      </span>
-                      <p className="mt-0.5 text-gray-800">
-                        {doc.tokenCount.toLocaleString()}
-                      </p>
-                    </div>
-                  )}
+                  <div className="rounded-lg bg-gray-50 px-3 py-2.5">
+                    <span className="text-[11px] uppercase tracking-wide text-gray-400">
+                      {t("documentPage.summary.tokens")}
+                    </span>
+                    <p className="mt-0.5 text-sm font-medium text-gray-800">
+                      {typeof doc?.tokenCount === "number"
+                        ? doc.tokenCount.toLocaleString(numberLocale)
+                        : level0IsProcessing
+                          ? t("common.processing")
+                          : "—"}
+                    </p>
+                  </div>
                 </div>
 
                 {doc?.description && (
-                  <div className="mt-4">
-                    <span className="text-xs uppercase tracking-wide text-gray-400">
-                      Description
+                  <div className="mt-3 flex flex-col gap-1 border-t border-gray-100 pt-3 sm:flex-row sm:items-start sm:gap-3">
+                    <span className="shrink-0 text-[11px] uppercase tracking-wide text-gray-400">
+                      {t("documentPage.summary.documentDescription")}
                     </span>
-                    <p className="mt-1 text-sm leading-relaxed text-gray-700">
+                    <p className="text-sm leading-relaxed text-gray-700">
                       {doc.description}
                     </p>
                   </div>
                 )}
+              </div>
 
+              <div className="mt-3 border-t border-gray-100 pt-3">
                 {documentFileHref ? (
-                  <div className="mt-4">
-                    <a
-                      href={documentFileHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline"
-                    >
-                      <FileText size={14} />
-                      View document file
-                    </a>
-                  </div>
+                  <a
+                    href={documentFileHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                  >
+                    <FileText size={14} />
+                    {t("documentPage.summary.viewFile")}
+                  </a>
                 ) : (
-                  <div className="mt-4 text-sm text-gray-500">
-                    No original file URL is available for this document.
-                  </div>
+                  <span className="text-xs text-gray-400">
+                    {t("documentPage.summary.fileUnavailable")}
+                  </span>
                 )}
               </div>
 
@@ -509,12 +534,10 @@ export default function DocumentPage() {
                 <div className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-4 text-sm text-blue-900">
                   <div className="flex items-center gap-2 font-medium">
                     <SearchCheck size={16} />
-                    Process Level 0 first
+                    {t("documentPage.level0Notice.title")}
                   </div>
                   <p className="mt-1 text-blue-900/90">
-                    Run preprocessing and validate chapter detection, text
-                    cleaning, footnotes, and sentence segmentation before
-                    launching metaphor analysis.
+                    {t("documentPage.level0Notice.description")}
                   </p>
                 </div>
               )}
@@ -522,18 +545,17 @@ export default function DocumentPage() {
               {!level0Ready && !level0IsProcessing && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
                   <h3 className="text-base font-semibold text-amber-900">
-                    Level 0 pending
+                    {t("documentPage.level0Pending.title")}
                   </h3>
                   <p className="mt-2 text-sm text-amber-900/90">
-                    This document has been uploaded, but Level 0 preprocessing
-                    has not been run yet.
+                    {t("documentPage.level0Pending.description")}
                   </p>
                   <div className="mt-4">
                     <Button
                       onClick={handleProcessLevel0}
                       className="bg-blue-700 text-white hover:bg-blue-800"
                     >
-                      Process Level 0
+                      {t("documentPage.level0Pending.button")}
                     </Button>
                   </div>
                 </div>
@@ -545,17 +567,16 @@ export default function DocumentPage() {
                     <Spinner size="sm" />
                     <div className="w-full">
                       <h3 className="text-base font-semibold text-blue-900">
-                        Processing Level 0
+                        {t("documentPage.level0Processing.title")}
                       </h3>
                       <p className="text-sm text-blue-900/80">
-                        Running preprocessing in the backend. Progress will
-                        update below.
+                        {t("documentPage.level0Processing.description")}
                       </p>
 
                       <div className="mt-4">
                         <div className="mb-1 flex items-center justify-between text-xs font-medium text-blue-900">
                           <span>
-                            {level0Progress?.message || "Processing..."}
+                            {t("documentPage.level0Processing.current")}
                           </span>
                           <span>{level0Progress?.progress ?? 0}%</span>
                         </div>
@@ -580,7 +601,7 @@ export default function DocumentPage() {
                       >
                         <div className="flex items-center justify-between gap-4">
                           <div className="font-medium text-gray-900">
-                            {step.label}
+                            {progressStepTitle(step.key, step.label)}
                           </div>
                           <span
                             className={cn(
@@ -595,13 +616,16 @@ export default function DocumentPage() {
                                 "bg-red-100 text-red-700",
                             )}
                           >
-                            {step.status}
+                            {t(`statuses.${step.status}`)}
                           </span>
                         </div>
 
-                        {step.message && (
+                        {(progressStepDescription(step.key) ||
+                          (step.status === "error" && step.message)) && (
                           <p className="mt-1 text-sm text-gray-600">
-                            {step.message}
+                            {step.status === "error" && step.message
+                              ? step.message
+                              : progressStepDescription(step.key)}
                           </p>
                         )}
                       </div>
@@ -629,7 +653,7 @@ export default function DocumentPage() {
                           : "text-gray-500 hover:text-gray-800",
                       )}
                     >
-                      Processing
+                      {t("documentPage.views.processing")}
                     </button>
                     <button
                       type="button"
@@ -641,7 +665,7 @@ export default function DocumentPage() {
                           : "text-gray-500 hover:text-gray-800",
                       )}
                     >
-                      Visualization
+                      {t("documentPage.views.visualization")}
                     </button>
                   </div>
 
@@ -676,8 +700,7 @@ export default function DocumentPage() {
 
           {tab > 0 && !level0Ready && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-              Process and review <strong>Level 0</strong> first before
-              continuing with Levels 1–5.
+              {t("documentPage.blocked")}
             </div>
           )}
 
