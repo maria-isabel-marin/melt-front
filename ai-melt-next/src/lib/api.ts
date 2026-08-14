@@ -12,9 +12,13 @@ import type {
   CulturalNarrative,
   AiProvider,
   ItemStatus,
+  Level0Config,
+  Level0ConfigOverrides,
+  DocumentLevel0ConfigResponse,
 } from '@/types'
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api'
+const BASE =
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api'
 
 export type Level0ProgressResponse = {
   documentId: string
@@ -33,7 +37,10 @@ export type Level0ProgressResponse = {
   }>
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
   const token = getToken()
   const res = await fetch(`${BASE}${path}`, {
     ...options,
@@ -55,7 +62,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const authApi = {
   createGuest: () =>
-    request<{ token: string; user: { id: string; isGuest: boolean } }>('/auth/guest', {
+    request<{
+      token: string
+      user: { id: string; isGuest: boolean }
+    }>('/auth/guest', {
       method: 'POST',
     }),
 
@@ -81,14 +91,23 @@ export const corpusApi = {
       body: JSON.stringify(data),
     }),
 
-  update: (id: string, data: Partial<{ name: string; description: string }>) =>
+  update: (
+    id: string,
+    data: Partial<{ name: string; description: string }>,
+  ) =>
     request<Corpus>(`/corpus/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
 
+  updateLevel0Config: (id: string, config: Level0Config) =>
+    request<Corpus>(`/corpus/${id}/level0-config`, {
+      method: 'PUT',
+      body: JSON.stringify({ config }),
+    }),
+
   delete: (id: string) =>
-    request<Corpus>(`/corpus/${id}`, {
+    request<void>(`/corpus/${id}`, {
       method: 'DELETE',
     }),
 }
@@ -97,14 +116,32 @@ export const documentApi = {
   list: (corpusId: string) =>
     request<DocumentSummary[]>(`/documentos?corpusId=${corpusId}`),
 
-  get: (id: string) =>
-    request<Document>(`/documentos/${id}`),
+  get: (id: string) => request<Document>(`/documentos/${id}`),
 
   getLevel0: (id: string) =>
     request<Level0Data>(`/documentos/${id}/level0`),
 
   getLevel0Progress: (id: string) =>
-    request<Level0ProgressResponse>(`/documentos/${id}/level0/progress`),
+    request<Level0ProgressResponse>(
+      `/documentos/${id}/level0/progress`,
+    ),
+
+  getLevel0Config: (id: string) =>
+    request<DocumentLevel0ConfigResponse>(
+      `/documentos/${id}/level0/config`,
+    ),
+
+  updateLevel0Config: (
+    id: string,
+    overrides: Level0ConfigOverrides | null,
+  ) =>
+    request<DocumentLevel0ConfigResponse>(
+      `/documentos/${id}/level0/config`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ overrides }),
+      },
+    ),
 
   uploadLevel0: async (payload: {
     corpusId: string
@@ -124,9 +161,15 @@ export const documentApi = {
     formData.append('title', payload.title)
 
     if (payload.author) formData.append('author', payload.author)
-    if (payload.language) formData.append('language', payload.language)
-    if (payload.documentType) formData.append('documentType', payload.documentType)
-    if (payload.description) formData.append('description', payload.description)
+    if (payload.language) {
+      formData.append('language', payload.language)
+    }
+    if (payload.documentType) {
+      formData.append('documentType', payload.documentType)
+    }
+    if (payload.description) {
+      formData.append('description', payload.description)
+    }
     if (typeof payload.pageCount === 'number') {
       formData.append('pageCount', String(payload.pageCount))
     }
@@ -148,9 +191,9 @@ export const documentApi = {
   },
 
   processLevel0: (id: string) =>
-  request<{ started: true }>(`/documentos/${id}/level0/process`, {
-    method: 'POST',
-  }),
+    request<{ started: true }>(`/documentos/${id}/level0/process`, {
+      method: 'POST',
+    }),
 
   create: (data: {
     corpusId: string
@@ -168,11 +211,14 @@ export const documentApi = {
     }),
 
   delete: (id: string) =>
-    request<Document>(`/documentos/${id}`, {
+    request<void>(`/documentos/${id}`, {
       method: 'DELETE',
     }),
 
-  initAnalysis: (id: string, aiProvider: AiProvider = 'CLAUDE') =>
+  initAnalysis: (
+    id: string,
+    aiProvider: AiProvider = 'CLAUDE',
+  ) =>
     request<Analysis>(`/documentos/${id}/analisis`, {
       method: 'POST',
       body: JSON.stringify({ aiProvider }),
@@ -180,11 +226,10 @@ export const documentApi = {
 }
 
 export const analysisApi = {
-  get: (id: string) =>
-    request<Analysis>(`/analisis/${id}`),
+  get: (id: string) => request<Analysis>(`/analisis/${id}`),
 
   process: (id: string, level: 1 | 2 | 3 | 4 | 5) =>
-    request<unknown>(`/analisis/${id}/nivel/${level}/process`, {
+    request(`/analisis/${id}/nivel/${level}/process`, {
       method: 'POST',
     }),
 
@@ -204,12 +249,12 @@ export const analysisApi = {
     request<CulturalNarrative>(`/analisis/${id}/nivel/5`),
 
   approveAll: (id: string, level: 1 | 2 | 3 | 4 | 5) =>
-    request<Analysis>(`/analisis/${id}/nivel/${level}/approve-all`, {
+    request(`/analisis/${id}/nivel/${level}/approve-all`, {
       method: 'POST',
     }),
 
   approve: (id: string, level: 1 | 2 | 3 | 4 | 5) =>
-    request<Analysis>(`/analisis/${id}/nivel/${level}/approve`, {
+    request(`/analisis/${id}/nivel/${level}/approve`, {
       method: 'POST',
     }),
 
@@ -217,9 +262,9 @@ export const analysisApi = {
     model: string,
     itemId: string,
     status: ItemStatus,
-    analystNote?: string
+    analystNote?: string,
   ) =>
-    request<unknown>(`/analisis/items/${model}/${itemId}/status`, {
+    request(`/analisis/items/${model}/${itemId}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status, analystNote }),
     }),

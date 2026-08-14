@@ -356,6 +356,114 @@ const en = {
       noData: 'No content lemmas are available.',
     },
   },
+  level0Config: {
+    configure: 'Level 0 configuration',
+    change: 'Change',
+    level0Configuration: 'Level 0 configuration',
+    sourceCorpus: 'Inherited from the corpus',
+    sourceDocument: 'Customized for this document',
+    corpusTitle: 'Corpus Level 0 configuration',
+    documentTitle: 'Document Level 0 configuration',
+    aboutTitle: 'Preprocessing configuration',
+    corpusDescription:
+      'These values become the Level 0 defaults for documents in this corpus. Existing document-specific overrides remain in place.',
+    documentDescription:
+      'This document can inherit the corpus configuration or override only the values that need to be different.',
+    useCorpus: 'Use corpus configuration',
+    useCorpusDescription:
+      'The document automatically follows the current Level 0 configuration of its corpus.',
+    customizeDocument: 'Customize for this document',
+    customizeDocumentDescription:
+      'Change only the parameters this document needs. Unchanged values continue to inherit from the corpus.',
+    sections: {
+      chapters: 'Chapter detection',
+      chaptersDescription:
+        'Controls how MELT identifies the chapter structure of PDF documents.',
+      cleaning: 'Text cleaning',
+      cleaningDescription:
+        'Controls cleanup rules applied before sentence segmentation and linguistic preprocessing.',
+      footnotes: 'Footnotes',
+      footnotesDescription:
+        'Controls whether footnotes are detected and separated from the main text.',
+      segmentation: 'Sentence segmentation',
+      segmentationDescription:
+        'Defines the accepted character-length range for segmented sentences.',
+      pageExclusions: 'Page exclusions',
+      pageExclusionsDescription:
+        'Document-specific page ranges that should not enter Level 0 processing.',
+    },
+    chapterDetection: {
+      enabled: 'Detect chapters',
+      enabledDescription:
+        'Identify chapter boundaries and assign processed pages and sentences to chapters.',
+      method: 'Detection method',
+    },
+    methods: {
+      AUTO: 'Automatic',
+      TOC: 'PDF table of contents / bookmarks',
+      PRINTED_INDEX: 'Printed index',
+      FONT_SIZE: 'Typography / font size',
+      NONE: 'Do not detect chapters',
+    },
+    methodDescriptions: {
+      AUTO: 'Try PDF bookmarks first, then a printed index, then typography, and finally the document title as fallback.',
+      TOC: 'Use only the PDF table of contents or bookmarks when available.',
+      PRINTED_INDEX: 'Use the printed index or contents pages to infer chapter ranges.',
+      FONT_SIZE: 'Infer chapter headings from typography and font-size differences.',
+      NONE: 'Skip chapter detection and use the document title as the fallback label.',
+    },
+    cleaning: {
+      repairHyphenation: 'Repair words split by line breaks',
+      repairHyphenationDescription:
+        'Joins words broken by PDF line wrapping or soft hyphens.',
+      detectRepeatedHeaders: 'Detect repeated headers and footers',
+      detectRepeatedHeadersDescription:
+        'Automatically removes short lines repeated across many pages.',
+      repeatedHeaderThreshold: 'Repeated-header threshold',
+      repeatedHeaderThresholdDescription:
+        'Fraction of pages in which a line must repeat to be treated as a header or footer (0.05–0.95).',
+      excludeFrontMatter: 'Exclude front matter automatically',
+      excludeFrontMatterDescription:
+        'Attempts to remove covers, credits, indexes, bibliographies, and similar preliminary material.',
+      minLineLength: 'Minimum line length',
+      minLineLengthDescription:
+        'Short lines below this length are removed only when they also look like noise.',
+      additionalHeadersFooters: 'Additional headers / footers to remove',
+      additionalHeadersFootersDescription:
+        'Enter one exact header or footer per line. This is useful for corpus-specific repeated labels.',
+      additionalHeadersFootersPlaceholder:
+        'COMMISSION OF TRUTH\nFINAL REPORT\nDOCUMENT SERIES',
+    },
+    footnotes: {
+      extract: 'Extract footnotes',
+      extractDescription:
+        'Detect footnotes using page position, font size, and footnote markers, and remove them from the main text.',
+    },
+    segmentation: {
+      minChars: 'Minimum sentence length',
+      minCharsDescription: 'Minimum accepted number of characters per sentence.',
+      maxChars: 'Maximum sentence length',
+      maxCharsDescription: 'Maximum accepted number of characters per sentence.',
+    },
+    pageExclusions: {
+      explicitRanges: 'Use explicit page ranges for this document',
+      explicitRangesDescription:
+        'When enabled, the ranges below override inherited or filename-specific page exclusions. Leaving the list empty explicitly disables those exclusions.',
+      from: 'From page',
+      to: 'To page',
+      add: 'Add range',
+      remove: 'Remove range',
+      emptyExplicit:
+        'No ranges are listed. Saving this state means no pages will be explicitly excluded by the page-range rule.',
+    },
+    outdatedWarning:
+      'Changing Level 0 configuration invalidates previously processed results. Any processed Level 0 and downstream levels will be marked as outdated and should be processed again.',
+    processingLocked:
+      'Configuration cannot be changed while Level 0 is processing.',
+    cancel: 'Cancel',
+    save: 'Save configuration',
+    saveError: 'Failed to save Level 0 configuration',
+  },
 }
 
 type Messages = typeof en
@@ -721,6 +829,115 @@ const es: Messages = {
       noData: 'No hay lemas de contenido disponibles.',
     },
   },
+  level0Config: {
+    configure: 'Configuración de Nivel 0',
+    change: 'Cambiar',
+    level0Configuration: 'Configuración de Nivel 0',
+    sourceCorpus: 'Heredada del corpus',
+    sourceDocument: 'Personalizada para este documento',
+    corpusTitle: 'Configuración de Nivel 0 del corpus',
+    documentTitle: 'Configuración de Nivel 0 del documento',
+    aboutTitle: 'Configuración de preprocesamiento',
+    corpusDescription:
+      'Estos valores se convierten en la configuración predeterminada de Nivel 0 para los documentos del corpus. Las personalizaciones específicas de cada documento se conservan.',
+    documentDescription:
+      'Este documento puede heredar la configuración del corpus o sobrescribir únicamente los valores que necesiten ser diferentes.',
+    useCorpus: 'Usar configuración del corpus',
+    useCorpusDescription:
+      'El documento sigue automáticamente la configuración de Nivel 0 vigente en su corpus.',
+    customizeDocument: 'Personalizar para este documento',
+    customizeDocumentDescription:
+      'Cambia solo los parámetros que este documento necesita. Los valores no modificados continúan heredándose del corpus.',
+    sections: {
+      chapters: 'Detección de capítulos',
+      chaptersDescription:
+        'Controla cómo MELT identifica la estructura de capítulos de los documentos PDF.',
+      cleaning: 'Limpieza del texto',
+      cleaningDescription:
+        'Controla las reglas de limpieza aplicadas antes de la segmentación y del procesamiento lingüístico.',
+      footnotes: 'Notas al pie',
+      footnotesDescription:
+        'Controla si las notas al pie se detectan y se separan del texto principal.',
+      segmentation: 'Segmentación de oraciones',
+      segmentationDescription:
+        'Define el rango de longitud en caracteres aceptado para las oraciones segmentadas.',
+      pageExclusions: 'Exclusión de páginas',
+      pageExclusionsDescription:
+        'Rangos de páginas específicos del documento que no deben entrar al procesamiento de Nivel 0.',
+    },
+    chapterDetection: {
+      enabled: 'Detectar capítulos',
+      enabledDescription:
+        'Identifica los límites de los capítulos y asigna las páginas y oraciones procesadas a cada capítulo.',
+      method: 'Método de detección',
+    },
+    methods: {
+      AUTO: 'Automático',
+      TOC: 'Tabla de contenido / marcadores del PDF',
+      PRINTED_INDEX: 'Índice impreso',
+      FONT_SIZE: 'Tipografía / tamaño de fuente',
+      NONE: 'No detectar capítulos',
+    },
+    methodDescriptions: {
+      AUTO: 'Prueba primero los marcadores del PDF, luego el índice impreso, después la tipografía y finalmente usa el título del documento como respaldo.',
+      TOC: 'Usa únicamente la tabla de contenido o los marcadores internos del PDF cuando estén disponibles.',
+      PRINTED_INDEX: 'Usa las páginas de índice o contenido impresas para inferir los rangos de capítulos.',
+      FONT_SIZE: 'Infiere los encabezados de capítulo mediante diferencias tipográficas y de tamaño de fuente.',
+      NONE: 'Omite la detección de capítulos y usa el título del documento como etiqueta de respaldo.',
+    },
+    cleaning: {
+      repairHyphenation: 'Reparar palabras cortadas por saltos de línea',
+      repairHyphenationDescription:
+        'Une palabras separadas por el ajuste de línea del PDF o por guiones suaves.',
+      detectRepeatedHeaders: 'Detectar encabezados y pies repetidos',
+      detectRepeatedHeadersDescription:
+        'Elimina automáticamente líneas cortas que se repiten en muchas páginas.',
+      repeatedHeaderThreshold: 'Umbral de encabezados repetidos',
+      repeatedHeaderThresholdDescription:
+        'Proporción de páginas en la que una línea debe repetirse para considerarse encabezado o pie (0,05–0,95).',
+      excludeFrontMatter: 'Excluir materia preliminar automáticamente',
+      excludeFrontMatterDescription:
+        'Intenta eliminar portadas, créditos, índices, bibliografías y material preliminar similar.',
+      minLineLength: 'Longitud mínima de línea',
+      minLineLengthDescription:
+        'Las líneas por debajo de esta longitud se eliminan solamente cuando además parecen ruido.',
+      additionalHeadersFooters: 'Encabezados / pies adicionales a eliminar',
+      additionalHeadersFootersDescription:
+        'Escribe un encabezado o pie exacto por línea. Es útil para etiquetas repetidas específicas de un corpus.',
+      additionalHeadersFootersPlaceholder:
+        'COMISIÓN DE LA VERDAD\nINFORME FINAL\nSERIE DOCUMENTAL',
+    },
+    footnotes: {
+      extract: 'Extraer notas al pie',
+      extractDescription:
+        'Detecta notas al pie mediante posición, tamaño de fuente y marcadores, y las separa del texto principal.',
+    },
+    segmentation: {
+      minChars: 'Longitud mínima de oración',
+      minCharsDescription: 'Cantidad mínima de caracteres aceptada por oración.',
+      maxChars: 'Longitud máxima de oración',
+      maxCharsDescription: 'Cantidad máxima de caracteres aceptada por oración.',
+    },
+    pageExclusions: {
+      explicitRanges: 'Usar rangos de páginas explícitos para este documento',
+      explicitRangesDescription:
+        'Al activarlo, los rangos de abajo sustituyen las exclusiones heredadas o específicas del nombre del archivo. Una lista vacía desactiva explícitamente esas exclusiones.',
+      from: 'Desde la página',
+      to: 'Hasta la página',
+      add: 'Agregar rango',
+      remove: 'Eliminar rango',
+      emptyExplicit:
+        'No hay rangos agregados. Guardar este estado significa que la regla de rangos no excluirá ninguna página explícitamente.',
+    },
+    outdatedWarning:
+      'Cambiar la configuración de Nivel 0 invalida los resultados procesados anteriormente. El Nivel 0 y los niveles posteriores que ya hayan sido procesados se marcarán como desactualizados y deberán procesarse de nuevo.',
+    processingLocked:
+      'La configuración no puede modificarse mientras el Nivel 0 está en procesamiento.',
+    cancel: 'Cancelar',
+    save: 'Guardar configuración',
+    saveError: 'No se pudo guardar la configuración de Nivel 0',
+  },
+
 }
 
 export const messages: Record<Locale, Messages> = {

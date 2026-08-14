@@ -1,12 +1,80 @@
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
-export type LevelStatus = 'PENDING' | 'PROCESSING' | 'PENDING_REVIEW' | 'APPROVED' | 'OUTDATED'
-export type ItemStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'MODIFIED'
+export type LevelStatus =
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'PENDING_REVIEW'
+  | 'APPROVED'
+  | 'OUTDATED'
+
+export type ItemStatus =
+  | 'PENDING_REVIEW'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'MODIFIED'
+
 export type AiProvider = 'CLAUDE' | 'OPENAI' | 'HUGGINGFACE'
+
 export type DocumentType =
-  | 'ACADEMIC_ARTICLE' | 'POLITICAL_SPEECH' | 'NEWS' | 'EDITORIAL'
-  | 'INTERVIEW' | 'OFFICIAL_DOCUMENT' | 'SOCIAL_MEDIA' | 'OTHER'
+  | 'ACADEMIC_ARTICLE'
+  | 'POLITICAL_SPEECH'
+  | 'NEWS'
+  | 'EDITORIAL'
+  | 'INTERVIEW'
+  | 'OFFICIAL_DOCUMENT'
+  | 'SOCIAL_MEDIA'
+  | 'OTHER'
+
 export type Language = 'SPANISH' | 'ENGLISH'
+
+// ─── Level 0 configuration ────────────────────────────────────────────────────
+
+export type Level0ChapterDetectionMethod =
+  | 'AUTO'
+  | 'TOC'
+  | 'PRINTED_INDEX'
+  | 'FONT_SIZE'
+  | 'NONE'
+
+export interface Level0Config {
+  chapterDetection: {
+    enabled: boolean
+    method: Level0ChapterDetectionMethod
+  }
+  cleaning: {
+    repairHyphenation: boolean
+    detectRepeatedHeaders: boolean
+    repeatedHeaderThreshold: number
+    excludeFrontMatter: boolean
+    minLineLength: number
+    additionalHeadersFooters: string[]
+  }
+  footnotes: {
+    extract: boolean
+  }
+  segmentation: {
+    minChars: number
+    maxChars: number
+  }
+  excludedPageRanges: Array<[number, number]> | null
+}
+
+export interface Level0ConfigOverrides {
+  chapterDetection?: Partial<Level0Config['chapterDetection']>
+  cleaning?: Partial<Level0Config['cleaning']>
+  footnotes?: Partial<Level0Config['footnotes']>
+  segmentation?: Partial<Level0Config['segmentation']>
+  excludedPageRanges?: Array<[number, number]> | null
+}
+
+export type Level0ConfigSource = 'CORPUS' | 'DOCUMENT'
+
+export interface DocumentLevel0ConfigResponse {
+  corpusConfig: Level0Config
+  overrides: Level0ConfigOverrides | null
+  effectiveConfig: Level0Config
+  source: Level0ConfigSource
+}
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -27,13 +95,15 @@ export interface Corpus {
   wordCount?: number
   discursiveCommunity?: string
   textualGenre?: string
+  level0Config?: Level0Config | null
+  effectiveLevel0Config?: Level0Config
   createdAt: string
   updatedAt: string
   _count?: { documents: number }
   documents?: DocumentSummary[]
 }
 
-// ─── Documents ───────────────────────────────────────────────────────────────
+// ─── Documents ────────────────────────────────────────────────────────────────
 
 export interface DocumentSummary {
   id: string
@@ -42,6 +112,7 @@ export interface DocumentSummary {
   language: Language
   pageCount?: number
   tokenCount?: number
+  level0ConfigOverrides?: Level0ConfigOverrides | null
   createdAt: string
   analysis?: AnalysisSummary | null
 }
@@ -73,7 +144,7 @@ export interface Analysis extends AnalysisSummary {
   createdAt: string
 }
 
-// ─── Level 0 — Ingestion ─────────────────────────────────────────────────────
+// ─── Level 0 — Ingestion ──────────────────────────────────────────────────────
 
 export interface Level0Chapter {
   name: string
@@ -165,6 +236,8 @@ export interface Level0Data {
   author?: string
   language?: string
   processed_at?: string
+  level0_config?: Level0Config
+
   page_count?: number
   pages_excluded?: number
   pages_clean?: number
@@ -184,8 +257,17 @@ export interface Level0Data {
   sentences?: Level0Sentence[]
 }
 
-export type Level0ProgressStatus = 'IDLE' | 'PROCESSING' | 'COMPLETED' | 'FAILED'
-export type Level0StepStatus = 'pending' | 'processing' | 'done' | 'error'
+export type Level0ProgressStatus =
+  | 'IDLE'
+  | 'PROCESSING'
+  | 'COMPLETED'
+  | 'FAILED'
+
+export type Level0StepStatus =
+  | 'pending'
+  | 'processing'
+  | 'done'
+  | 'error'
 
 export interface Level0ProgressStep {
   key: string
@@ -205,7 +287,7 @@ export interface Level0Progress {
   steps: Level0ProgressStep[]
 }
 
-// ─── Level 1 — Primary Metaphors ─────────────────────────────────────────────
+// ─── Level 1 — Primary Metaphors ──────────────────────────────────────────────
 
 export interface OntologicalMapping {
   id: string
