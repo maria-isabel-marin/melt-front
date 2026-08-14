@@ -17,6 +17,8 @@ import type {
   CulturalNarrative,
   LevelStatus,
   Level0Data,
+  DocumentLevel0ConfigResponse,
+  Level0ConfigOverrides,
 } from "@/types";
 import { LocalizedLevelBadge } from "@/components/i18n/LocalizedLevelBadge";
 import { Button } from "@/components/ui/button";
@@ -29,9 +31,10 @@ import { Level2 } from "@/components/analysis/Level2";
 import { Level3 } from "@/components/analysis/Level3";
 import { Level4 } from "@/components/analysis/Level4";
 import { Level5 } from "@/components/analysis/Level5";
-import { ArrowLeft, FileText, SearchCheck, Zap } from "lucide-react";
+import { ArrowLeft, FileText, SearchCheck, Settings2, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/components/i18n/I18nProvider";
+import { Level0ConfigDialog } from "@/components/config/Level0ConfigDialog";
 
 type Tab = 0 | 1 | 2 | 3 | 4 | 5;
 type Level0View = "processing" | "visualization";
@@ -58,6 +61,11 @@ export default function DocumentPage() {
   const [level0Error, setLevel0Error] = useState("");
   const [level0Progress, setLevel0Progress] =
     useState<Level0ProgressResponse | null>(null);
+
+  const [level0ConfigInfo, setLevel0ConfigInfo] =
+    useState<DocumentLevel0ConfigResponse | null>(null);
+  const [showLevel0Config, setShowLevel0Config] = useState(false);
+  const [savingLevel0Config, setSavingLevel0Config] = useState(false);
 
   const [l1, setL1] = useState<PrimaryMetaphor[]>([]);
   const [l2, setL2] = useState<ConventionalMetaphor[]>([]);
@@ -158,6 +166,16 @@ export default function DocumentPage() {
     }
   }, [docId]);
 
+  const loadLevel0Config = useCallback(async () => {
+    try {
+      const data = await documentApi.getLevel0Config(docId);
+      setLevel0ConfigInfo(data);
+      return data;
+    } catch {
+      return null;
+    }
+  }, [docId]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -166,7 +184,10 @@ export default function DocumentPage() {
         const result = await loadDocument();
         if (cancelled) return;
 
-        await loadLevel0Progress();
+        await Promise.all([
+          loadLevel0Progress(),
+          loadLevel0Config(),
+        ]);
 
         if (result.analysis?.level0Status === "APPROVED") {
           await loadLevel0();
@@ -183,7 +204,12 @@ export default function DocumentPage() {
     return () => {
       cancelled = true;
     };
-  }, [loadDocument, loadLevel0, loadLevel0Progress]);
+  }, [
+    loadDocument,
+    loadLevel0,
+    loadLevel0Progress,
+    loadLevel0Config,
+  ]);
 
   useEffect(() => {
     if (!analysis) return;
@@ -281,6 +307,35 @@ export default function DocumentPage() {
       alert(e instanceof Error ? e.message : t("documentPage.initializeError"));
     } finally {
       setInitLoading(false);
+    }
+  };
+
+  const handleSaveLevel0Config = async (
+    overrides: Level0ConfigOverrides | null,
+  ) => {
+    setSavingLevel0Config(true);
+
+    try {
+      const updatedConfig = await documentApi.updateLevel0Config(
+        docId,
+        overrides,
+      );
+
+      setLevel0ConfigInfo(updatedConfig);
+      setLevel0(null);
+      setLevel0Error("");
+      setLevel0View("processing");
+      setShowLevel0Config(false);
+
+      await loadDocument();
+    } catch (configError: unknown) {
+      alert(
+        configError instanceof Error
+          ? configError.message
+          : t("level0Config.saveError"),
+      );
+    } finally {
+      setSavingLevel0Config(false);
     }
   };
 
@@ -512,7 +567,7 @@ export default function DocumentPage() {
                 )}
               </div>
 
-              <div className="mt-3 border-t border-gray-100 pt-3">
+              <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
                 {documentFileHref ? (
                   <a
                     href={documentFileHref}
@@ -528,6 +583,40 @@ export default function DocumentPage() {
                     {t("documentPage.summary.fileUnavailable")}
                   </span>
                 )}
+
+                <Button
+                  variant="outline"
+                  onClick={() => setShowLevel0Config(true)}
+                  disabled={level0IsProcessing}
+                >
+                  <Settings2 size={15} />
+                  {t("level0Config.configure")}
+                </Button>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {t("level0Config.level0Configuration")}
+                    </p>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      {level0ConfigInfo?.source === "DOCUMENT"
+                        ? t("level0Config.sourceDocument")
+                        : t("level0Config.sourceCorpus")}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowLevel0Config(true)}
+                    disabled={level0IsProcessing}
+                    className="inline-flex items-center gap-2 self-start text-sm font-medium text-blue-700 transition hover:text-blue-800 disabled:cursor-not-allowed disabled:text-gray-400 sm:self-auto"
+                  >
+                    <Settings2 size={14} />
+                    {t("level0Config.change")}
+                  </button>
+                </div>
               </div>
 
               {!level0Ready && !level0IsProcessing && (
@@ -790,6 +879,18 @@ export default function DocumentPage() {
           )}
         </div>
       </div>
+
+      <Level0ConfigDialog
+        open={showLevel0Config}
+        onClose={() => setShowLevel0Config(false)}
+        scope="document"
+        corpusConfig={level0ConfigInfo?.corpusConfig}
+        effectiveConfig={level0ConfigInfo?.effectiveConfig}
+        source={level0ConfigInfo?.source}
+        saving={savingLevel0Config}
+        disabled={level0IsProcessing}
+        onSave={handleSaveLevel0Config}
+      />
     </div>
   );
 }

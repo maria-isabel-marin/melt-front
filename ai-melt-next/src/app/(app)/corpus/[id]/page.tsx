@@ -8,6 +8,7 @@ import type {
   DocumentSummary,
   DocumentType,
   Language,
+  Level0Config,
 } from '@/types'
 import { Button } from '@/components/ui/button'
 import {
@@ -29,9 +30,12 @@ import {
   FileText,
   Trash2,
   UploadCloud,
+  Settings2,
 } from 'lucide-react'
 import { LocalizedLevelBadge } from '@/components/i18n/LocalizedLevelBadge'
 import { useI18n } from '@/components/i18n/I18nProvider'
+import { Level0ConfigDialog } from '@/components/config/Level0ConfigDialog'
+import { DEFAULT_LEVEL0_CONFIG } from '@/lib/level0-config'
 
 const LANGUAGES: Language[] = ['ENGLISH', 'SPANISH']
 
@@ -76,6 +80,8 @@ export default function CorpusDetailPage() {
   const [uploadForm, setUploadForm] = useState(
     EMPTY_UPLOAD_FORM,
   )
+  const [showLevel0Config, setShowLevel0Config] = useState(false)
+  const [savingLevel0Config, setSavingLevel0Config] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -130,6 +136,27 @@ export default function CorpusDetailPage() {
       )
     } finally {
       setUploading(false)
+    }
+  }
+
+  const handleSaveLevel0Config = async (config: Level0Config) => {
+    setSavingLevel0Config(true)
+
+    try {
+      const updatedCorpus = await corpusApi.updateLevel0Config(id, config)
+      setCorpus(updatedCorpus)
+      setShowLevel0Config(false)
+
+      const refreshedDocuments = await documentApi.list(id)
+      setDocs(refreshedDocuments)
+    } catch (configError: unknown) {
+      alert(
+        configError instanceof Error
+          ? configError.message
+          : t('level0Config.saveError'),
+      )
+    } finally {
+      setSavingLevel0Config(false)
     }
   }
 
@@ -266,15 +293,25 @@ export default function CorpusDetailPage() {
               </div>
             </div>
 
-            {docs.length > 0 && (
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
               <Button
-                onClick={() => setShowUpload(true)}
-                className="bg-blue-700 text-white hover:bg-blue-800"
+                variant="outline"
+                onClick={() => setShowLevel0Config(true)}
               >
-                <UploadCloud size={16} />
-                {t('corpusDetail.ingestDocument')}
+                <Settings2 size={16} />
+                {t('level0Config.configure')}
               </Button>
-            )}
+
+              {docs.length > 0 && (
+                <Button
+                  onClick={() => setShowUpload(true)}
+                  className="bg-blue-700 text-white hover:bg-blue-800"
+                >
+                  <UploadCloud size={16} />
+                  {t('corpusDetail.ingestDocument')}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -400,6 +437,20 @@ export default function CorpusDetailPage() {
           </div>
         </div>
       )}
+
+
+      <Level0ConfigDialog
+        open={showLevel0Config}
+        onClose={() => setShowLevel0Config(false)}
+        scope="corpus"
+        config={
+          corpus?.effectiveLevel0Config ??
+          corpus?.level0Config ??
+          DEFAULT_LEVEL0_CONFIG
+        }
+        saving={savingLevel0Config}
+        onSave={handleSaveLevel0Config}
+      />
 
       <Dialog
         open={showUpload}
