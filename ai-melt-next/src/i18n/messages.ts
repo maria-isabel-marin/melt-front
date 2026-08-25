@@ -51,6 +51,15 @@ const en = {
     done: 'Done',
     error: 'Error',
   },
+  levelWrapper: {
+    level: 'Level {level}',
+    process: 'Process with AI',
+    reprocess: 'Re-process',
+    processing: 'Processing…',
+    approveAll: 'Approve all',
+    approveLevel: 'Approve level',
+    pendingHint:'Click "Process with AI" to start Level {level}.',
+  },
   corpus: {
     title: 'My Corpora',
     subtitle: 'Organize your documents for metaphor analysis',
@@ -464,6 +473,233 @@ const en = {
     save: 'Save configuration',
     saveError: 'Failed to save Level 0 configuration',
   },
+  level1Config: {
+    configure: 'Level 1 configuration',
+    change: 'Change',
+    level1Configuration: 'Level 1 configuration',
+    sourceCorpus: 'Inherited from the corpus',
+    sourceDocument: 'Customized for this document',
+    corpusTitle: 'Corpus Level 1 configuration',
+    documentTitle: 'Document Level 1 configuration',
+    aboutTitle: 'MIPVU processing configuration',
+    corpusDescription:
+      'These values become the Level 1 defaults for documents in this corpus. They control the active AI approaches, reproducible sentence selection, batching, and generated mappings.',
+    documentDescription:
+      'This document can inherit the corpus Level 1 configuration or override only the parameters that need to be different.',
+    useCorpus: 'Use corpus configuration',
+    useCorpusDescription:
+      'The document automatically follows the current Level 1 configuration of its corpus.',
+    customizeDocument: 'Customize for this document',
+    customizeDocumentDescription:
+      'Change only the Level 1 parameters this document needs. Unchanged values continue to inherit from the corpus.',
+    inheritedLocked:
+      'Inherited values are read-only. Switch to document customization to change them.',
+    sections: {
+      approaches: 'Analysis approaches',
+      approachesDescription:
+        'Run the same sentence sample through OpenAI, Claude, or both. Using both enables cross-approach agreement metrics.',
+      sentences: 'Sentence selection',
+      sentencesDescription:
+        'Choose whether Level 1 analyzes every Level 0 sentence or a reproducible subset.',
+      execution: 'API execution',
+      executionDescription:
+        'Controls the number of target sentences grouped into each model request.',
+      output: 'Generated mappings',
+      outputDescription:
+        'Choose which additional conceptual mapping structures are requested from the models.',
+    },
+    approaches: {
+      OPENAI: 'OpenAI · GPT-4o mini',
+      OPENAIDescription:
+        'Analyze the selected sample with the configured OpenAI model.',
+      CLAUDE: 'Anthropic · Claude Sonnet 4.5',
+      CLAUDEDescription:
+        'Analyze the same selected sample with the configured Claude model.',
+    },
+    sentences: {
+      all: 'Analyze all sentences',
+      allDescription:
+        'Run MIPVU over every sentence produced by Level 0.',
+      limited: 'Analyze a limited sample',
+      limitedDescription:
+        'Use a smaller reproducible sample for testing, cost control, or methodological sampling.',
+      maxSentences: 'Maximum sentences',
+      maxSentencesDescription:
+        'Maximum number of Level 0 sentences selected for this Level 1 run.',
+      strategy: 'Selection strategy',
+      randomSeed: 'Random seed',
+      randomSeedDescription:
+        'A fixed seed makes random sampling reproducible. The notebook reference uses 42.',
+    },
+    strategies: {
+      RANDOM: 'Reproducible random sample',
+      DISTRIBUTED: 'Distributed across the document',
+      BY_CHAPTER: 'Balanced by chapter',
+      FIRST: 'First N sentences',
+    },
+    strategyDescriptions: {
+      RANDOM:
+        'Selects a deterministic pseudo-random sample using the configured seed.',
+      DISTRIBUTED:
+        'Selects positions spread from the beginning to the end of the document.',
+      BY_CHAPTER:
+        'Cycles through detected chapters to improve chapter coverage.',
+      FIRST:
+        'Selects only the first N sentences. Useful mainly for technical tests.',
+    },
+    execution: {
+      batchSize: 'Sentences per request',
+      batchSizeDescription:
+        'Maximum number of target sentences sent in one request to each active approach.',
+      estimate:
+        '{sentences} target sentences × {approaches} approach(es) will require approximately {requests} API request(s).',
+    },
+    output: {
+      ontologicalMappings: 'Generate ontological mappings',
+      ontologicalMappingsDescription:
+        'Generate source-element → target-element correspondences for each detected metaphor.',
+      epistemicMappings: 'Generate epistemic mappings',
+      epistemicMappingsDescription:
+        'Generate transferred relations or inferences associated with each metaphor.',
+    },
+    validation: {
+      approachRequired: 'Enable at least one Level 1 analysis approach.',
+      maxSentences: 'The sentence limit must be greater than zero.',
+    },
+    outdatedWarning:
+      'Changing Level 1 configuration marks previously processed Level 1 and downstream results as outdated. Level 0 is not affected.',
+    cancel: 'Cancel',
+    save: 'Save configuration',
+    saveError: 'Failed to save Level 1 configuration',
+  },
+  level1: {
+    approaches: {
+      OPENAI: 'OpenAI',
+      CLAUDE: 'Claude',
+    },
+    emptyTitle: 'No primary metaphors identified yet',
+    emptyDescription:
+      'Process Level 1 to run the configured MIPVU approaches over the selected Level 0 sentences.',
+    resultCount: '{count} Level 1 result row(s)',
+    multiApproach: 'Multi-approach results available',
+    updateError: 'Failed to update metaphor status',
+    cannotProcess:
+      'Level 1 cannot be processed with the current state or configuration.',
+    confirmProcess:
+      'Level 1 will analyze {sentences} sentence(s) using {approaches}. Approximately {requests} API request(s) are expected. Continue?',
+    outdatedWarning:
+      'The Level 1 configuration changed. The results below belong to the previous run until Level 1 is processed again.',
+    views: {
+      review: 'Review',
+      visualization: 'Visualization',
+    },
+    preview: {
+      title: 'Level 1 execution preview',
+      description:
+        'This preview is calculated locally by the backend and does not consume AI API calls.',
+      available: 'Available sentences',
+      selected: 'Selected',
+      batchSize: 'Batch size',
+      approaches: 'Approaches',
+      requests: 'Estimated requests',
+      contextPolicy:
+        'Each target sentence is analyzed with its previous and next Level 0 sentence as contextual support.',
+    },
+    actions: {
+      approve: 'Approve',
+      reject: 'Reject',
+    },
+    fields: {
+      sentenceId: 'Level 0 sentence ID',
+      chapter: 'Chapter',
+      focus: 'Lexical focus',
+      lemma: 'Focus lemma',
+      pos: 'Part of speech',
+      context: 'Target sentence',
+      expandedContext: 'Expanded context (previous | current | next)',
+      contextualMeaning: 'Contextual meaning',
+      basicMeaning: 'Basic meaning',
+      sourceDomain: 'Source domain',
+      targetDomain: 'Target domain',
+      conceptualMetaphor: 'Conceptual metaphor',
+      approach: 'Approach',
+      model: 'Model',
+      crossApproachConfidence: 'Cross-approach detections',
+    },
+    mappings: {
+      ontological: 'Ontological mappings',
+      epistemic: 'Epistemic mappings',
+    },
+  },
+  level1Visualization: {
+    noData: 'No Level 1 visualization data is available yet.',
+    noDataAvailable: 'No data available.',
+    title: 'Level 1 visualization',
+    description:
+      'Explore primary metaphors, domains, lexical focus, mappings, and agreement between active AI approaches.',
+    runStats: {
+      title: 'Execution metrics by approach',
+      description:
+        'Requests, token usage, elapsed time, and detected metaphor rows reported by the last Level 1 run.',
+      requests: 'Requests',
+      tokens: 'Tokens',
+      time: 'Time',
+      metaphors: 'Rows',
+    },
+    matrix: {
+      title: 'Source × target domain matrix',
+      description:
+        'Cross-tabulation of the most frequent source and target domains in consolidated detections.',
+      sourceTarget: 'Source \ Target',
+    },
+    stats: {
+      consolidated: 'Consolidated metaphors',
+      rows: 'Approach result rows',
+      approaches: 'Active approaches',
+      kappa: "Cohen\'s κ",
+    },
+    agreement: {
+      title: 'Cross-approach agreement',
+      description:
+        '{agreed} of {total} consolidated metaphor(s) were detected by all active approaches ({percent}%).',
+    },
+    chapters: {
+      title: 'Metaphors by chapter',
+      description:
+        'Consolidated primary metaphors distributed across detected document chapters.',
+    },
+    approaches: {
+      title: 'Detections by approach',
+      description:
+        'Number of stored Level 1 detection rows produced by each active AI approach.',
+    },
+    sourceDomains: {
+      title: 'Top source domains',
+      description:
+        'Most frequent source domains in the consolidated Level 1 detections.',
+    },
+    targetDomains: {
+      title: 'Top target domains',
+      description:
+        'Most frequent target domains in the consolidated Level 1 detections.',
+    },
+    pos: {
+      title: 'Lexical focus POS distribution',
+      description:
+        'Grammatical categories of the lexical units carrying metaphorical meaning.',
+    },
+    inferenceTypes: {
+      title: 'Epistemic inference types',
+      description:
+        'Distribution of the epistemic mapping types generated for detected metaphors.',
+    },
+    conceptual: {
+      title: 'Top conceptual metaphors',
+      description:
+        'Most frequent conceptual metaphor formulations after cross-approach consolidation.',
+    },
+  },
+
 }
 
 type Messages = typeof en
@@ -518,6 +754,15 @@ const es: Messages = {
     running: 'En curso',
     done: 'Completado',
     error: 'Error',
+  },
+  levelWrapper: {
+    level: 'Nivel {level}',
+    process: 'Procesar con IA',
+    reprocess: 'Reprocesar',
+    processing: 'Procesando…',
+    approveAll: 'Aprobar todos',
+    approveLevel: 'Aprobar nivel',
+    pendingHint:'Haz clic en "Procesar con IA" para iniciar el Nivel {level}.',
   },
   corpus: {
     title: 'Mis corpus',
@@ -936,6 +1181,233 @@ const es: Messages = {
     cancel: 'Cancelar',
     save: 'Guardar configuración',
     saveError: 'No se pudo guardar la configuración de Nivel 0',
+  },
+
+  level1Config: {
+    configure: 'Configuración de Nivel 1',
+    change: 'Cambiar',
+    level1Configuration: 'Configuración de Nivel 1',
+    sourceCorpus: 'Heredada del corpus',
+    sourceDocument: 'Personalizada para este documento',
+    corpusTitle: 'Configuración de Nivel 1 del corpus',
+    documentTitle: 'Configuración de Nivel 1 del documento',
+    aboutTitle: 'Configuración del procesamiento MIPVU',
+    corpusDescription:
+      'Estos valores se convierten en la configuración predeterminada de Nivel 1 para los documentos del corpus. Controlan los enfoques de IA, la selección reproducible de oraciones, los lotes y los mapeos generados.',
+    documentDescription:
+      'Este documento puede heredar la configuración de Nivel 1 del corpus o sobrescribir únicamente los parámetros que necesiten ser diferentes.',
+    useCorpus: 'Usar configuración del corpus',
+    useCorpusDescription:
+      'El documento sigue automáticamente la configuración de Nivel 1 vigente en su corpus.',
+    customizeDocument: 'Personalizar para este documento',
+    customizeDocumentDescription:
+      'Cambia solo los parámetros de Nivel 1 que este documento necesita. Los demás continúan heredándose del corpus.',
+    inheritedLocked:
+      'Los valores heredados son de solo lectura. Cambia a personalización del documento para modificarlos.',
+    sections: {
+      approaches: 'Enfoques de análisis',
+      approachesDescription:
+        'Ejecuta la misma muestra con OpenAI, Claude o ambos. Usar ambos permite calcular concordancia entre enfoques.',
+      sentences: 'Selección de oraciones',
+      sentencesDescription:
+        'Define si el Nivel 1 analiza todas las oraciones de Nivel 0 o una muestra reproducible.',
+      execution: 'Ejecución de la API',
+      executionDescription:
+        'Controla cuántas oraciones objetivo se agrupan en cada solicitud a cada modelo.',
+      output: 'Mapeos generados',
+      outputDescription:
+        'Elige qué estructuras conceptuales adicionales deben solicitarse a los modelos.',
+    },
+    approaches: {
+      OPENAI: 'OpenAI · GPT-4o mini',
+      OPENAIDescription:
+        'Analiza la muestra seleccionada con el modelo de OpenAI configurado.',
+      CLAUDE: 'Anthropic · Claude Sonnet 4.5',
+      CLAUDEDescription:
+        'Analiza la misma muestra seleccionada con el modelo de Claude configurado.',
+    },
+    sentences: {
+      all: 'Analizar todas las oraciones',
+      allDescription:
+        'Ejecuta MIPVU sobre todas las oraciones producidas por el Nivel 0.',
+      limited: 'Analizar una muestra limitada',
+      limitedDescription:
+        'Usa una muestra reproducible más pequeña para pruebas, control de consumo o muestreo metodológico.',
+      maxSentences: 'Máximo de oraciones',
+      maxSentencesDescription:
+        'Cantidad máxima de oraciones de Nivel 0 seleccionadas para esta ejecución de Nivel 1.',
+      strategy: 'Estrategia de selección',
+      randomSeed: 'Semilla aleatoria',
+      randomSeedDescription:
+        'Una semilla fija hace reproducible el muestreo aleatorio. El notebook de referencia usa 42.',
+    },
+    strategies: {
+      RANDOM: 'Muestra aleatoria reproducible',
+      DISTRIBUTED: 'Distribuidas por el documento',
+      BY_CHAPTER: 'Balanceadas por capítulo',
+      FIRST: 'Primeras N oraciones',
+    },
+    strategyDescriptions: {
+      RANDOM:
+        'Selecciona una muestra pseudoaleatoria determinista usando la semilla configurada.',
+      DISTRIBUTED:
+        'Selecciona posiciones repartidas desde el inicio hasta el final del documento.',
+      BY_CHAPTER:
+        'Recorre los capítulos detectados para mejorar la cobertura por capítulo.',
+      FIRST:
+        'Selecciona únicamente las primeras N oraciones. Es útil principalmente para pruebas técnicas.',
+    },
+    execution: {
+      batchSize: 'Oraciones por solicitud',
+      batchSizeDescription:
+        'Cantidad máxima de oraciones objetivo enviadas en una solicitud a cada enfoque activo.',
+      estimate:
+        '{sentences} oraciones objetivo × {approaches} enfoque(s) requerirán aproximadamente {requests} solicitud(es) a la API.',
+    },
+    output: {
+      ontologicalMappings: 'Generar mapeos ontológicos',
+      ontologicalMappingsDescription:
+        'Genera correspondencias elemento fuente → elemento meta para cada metáfora detectada.',
+      epistemicMappings: 'Generar mapeos epistémicos',
+      epistemicMappingsDescription:
+        'Genera relaciones o inferencias transferidas asociadas a cada metáfora.',
+    },
+    validation: {
+      approachRequired: 'Activa al menos un enfoque de análisis de Nivel 1.',
+      maxSentences: 'El límite de oraciones debe ser mayor que cero.',
+    },
+    outdatedWarning:
+      'Cambiar la configuración de Nivel 1 marca como desactualizados el Nivel 1 y los niveles posteriores ya procesados. El Nivel 0 no se modifica.',
+    cancel: 'Cancelar',
+    save: 'Guardar configuración',
+    saveError: 'No se pudo guardar la configuración de Nivel 1',
+  },
+  level1: {
+    approaches: {
+      OPENAI: 'OpenAI',
+      CLAUDE: 'Claude',
+    },
+    emptyTitle: 'Aún no se identificaron metáforas primarias',
+    emptyDescription:
+      'Procesa el Nivel 1 para ejecutar los enfoques MIPVU configurados sobre las oraciones seleccionadas del Nivel 0.',
+    resultCount: '{count} fila(s) de resultados de Nivel 1',
+    multiApproach: 'Hay resultados de múltiples enfoques',
+    updateError: 'No fue posible actualizar el estado de la metáfora',
+    cannotProcess:
+      'El Nivel 1 no puede procesarse con el estado o la configuración actual.',
+    confirmProcess:
+      'El Nivel 1 analizará {sentences} oración(es) usando {approaches}. Se estiman aproximadamente {requests} solicitud(es) a la API. ¿Continuar?',
+    outdatedWarning:
+      'La configuración de Nivel 1 cambió. Los resultados de abajo pertenecen a la ejecución anterior hasta que vuelvas a procesar el Nivel 1.',
+    views: {
+      review: 'Revisión',
+      visualization: 'Visualización',
+    },
+    preview: {
+      title: 'Vista previa de ejecución del Nivel 1',
+      description:
+        'Esta vista previa se calcula en el backend y no consume llamadas a las API de IA.',
+      available: 'Oraciones disponibles',
+      selected: 'Seleccionadas',
+      batchSize: 'Tamaño del lote',
+      approaches: 'Enfoques',
+      requests: 'Solicitudes estimadas',
+      contextPolicy:
+        'Cada oración objetivo se analiza usando como apoyo contextual la oración anterior y la siguiente del Nivel 0.',
+    },
+    actions: {
+      approve: 'Aprobar',
+      reject: 'Rechazar',
+    },
+    fields: {
+      sentenceId: 'ID de oración de Nivel 0',
+      chapter: 'Capítulo',
+      focus: 'Foco léxico',
+      lemma: 'Lema del foco',
+      pos: 'Categoría gramatical',
+      context: 'Oración objetivo',
+      expandedContext: 'Contexto ampliado (anterior | actual | siguiente)',
+      contextualMeaning: 'Significado contextual',
+      basicMeaning: 'Significado básico',
+      sourceDomain: 'Dominio fuente',
+      targetDomain: 'Dominio meta',
+      conceptualMetaphor: 'Metáfora conceptual',
+      approach: 'Enfoque',
+      model: 'Modelo',
+      crossApproachConfidence: 'Detecciones entre enfoques',
+    },
+    mappings: {
+      ontological: 'Mapeos ontológicos',
+      epistemic: 'Mapeos epistémicos',
+    },
+  },
+  level1Visualization: {
+    noData: 'Todavía no hay datos de visualización del Nivel 1.',
+    noDataAvailable: 'No hay datos disponibles.',
+    title: 'Visualización del Nivel 1',
+    description:
+      'Explora metáforas primarias, dominios, foco léxico, mapeos y concordancia entre los enfoques de IA activos.',
+    runStats: {
+      title: 'Métricas de ejecución por enfoque',
+      description:
+        'Solicitudes, consumo de tokens, tiempo y filas de metáforas reportadas por la última ejecución de Nivel 1.',
+      requests: 'Solicitudes',
+      tokens: 'Tokens',
+      time: 'Tiempo',
+      metaphors: 'Filas',
+    },
+    matrix: {
+      title: 'Matriz dominio fuente × dominio meta',
+      description:
+        'Cruce de los dominios fuente y meta más frecuentes en las detecciones consolidadas.',
+      sourceTarget: 'Fuente \ Meta',
+    },
+    stats: {
+      consolidated: 'Metáforas consolidadas',
+      rows: 'Filas por enfoque',
+      approaches: 'Enfoques activos',
+      kappa: 'κ de Cohen',
+    },
+    agreement: {
+      title: 'Concordancia entre enfoques',
+      description:
+        '{agreed} de {total} metáfora(s) consolidada(s) fueron detectadas por todos los enfoques activos ({percent}%).',
+    },
+    chapters: {
+      title: 'Metáforas por capítulo',
+      description:
+        'Metáforas primarias consolidadas distribuidas entre los capítulos detectados del documento.',
+    },
+    approaches: {
+      title: 'Detecciones por enfoque',
+      description:
+        'Cantidad de filas de detección de Nivel 1 producidas por cada enfoque de IA activo.',
+    },
+    sourceDomains: {
+      title: 'Dominios fuente principales',
+      description:
+        'Dominios fuente más frecuentes en las detecciones consolidadas de Nivel 1.',
+    },
+    targetDomains: {
+      title: 'Dominios meta principales',
+      description:
+        'Dominios meta más frecuentes en las detecciones consolidadas de Nivel 1.',
+    },
+    pos: {
+      title: 'Distribución POS del foco léxico',
+      description:
+        'Categorías gramaticales de las unidades léxicas que portan el sentido metafórico.',
+    },
+    inferenceTypes: {
+      title: 'Tipos de inferencia epistémica',
+      description:
+        'Distribución de los tipos de mapeo epistémico generados para las metáforas detectadas.',
+    },
+    conceptual: {
+      title: 'Metáforas conceptuales principales',
+      description:
+        'Formulaciones de metáfora conceptual más frecuentes después de consolidar los enfoques.',
+    },
   },
 
 }

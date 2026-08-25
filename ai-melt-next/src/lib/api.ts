@@ -15,14 +15,24 @@ import type {
   Level0Config,
   Level0ConfigOverrides,
   DocumentLevel0ConfigResponse,
+  Level1Config,
+  Level1ConfigOverrides,
+  DocumentLevel1ConfigResponse,
+  Level1PreviewResponse,
+  Level1MetadataResponse,
 } from '@/types'
 
 const BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api'
+  process.env.NEXT_PUBLIC_API_URL ??
+  'http://localhost:3000/api'
 
 export type Level0ProgressResponse = {
   documentId: string
-  status: 'PENDING' | 'PROCESSING' | 'APPROVED' | 'FAILED'
+  status:
+    | 'PENDING'
+    | 'PROCESSING'
+    | 'APPROVED'
+    | 'FAILED'
   currentStep: string | null
   progress: number
   message?: string
@@ -32,7 +42,11 @@ export type Level0ProgressResponse = {
   steps: Array<{
     key: string
     label: string
-    status: 'pending' | 'running' | 'done' | 'error'
+    status:
+      | 'pending'
+      | 'running'
+      | 'done'
+      | 'error'
     message?: string
   }>
 }
@@ -42,21 +56,34 @@ async function request<T>(
   options: RequestInit = {},
 ): Promise<T> {
   const token = getToken()
+
   const res = await fetch(`${BASE}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(token
+        ? {
+            Authorization: `Bearer ${token}`,
+          }
+        : {}),
       ...options.headers,
     },
   })
 
   if (!res.ok) {
-    const msg = await res.text().catch(() => res.statusText)
-    throw new Error(msg || `HTTP ${res.status}`)
+    const msg = await res
+      .text()
+      .catch(() => res.statusText)
+
+    throw new Error(
+      msg || `HTTP ${res.status}`,
+    )
   }
 
-  if (res.status === 204) return undefined as T
+  if (res.status === 204) {
+    return undefined as T
+  }
+
   return res.json()
 }
 
@@ -64,21 +91,29 @@ export const authApi = {
   createGuest: () =>
     request<{
       token: string
-      user: { id: string; isGuest: boolean }
+      user: {
+        id: string
+        isGuest: boolean
+      }
     }>('/auth/guest', {
       method: 'POST',
     }),
 
   guestLogout: () =>
-    request<{ message: string }>('/auth/guest/logout', {
-      method: 'POST',
-    }),
+    request<{ message: string }>(
+      '/auth/guest/logout',
+      {
+        method: 'POST',
+      },
+    ),
 }
 
 export const corpusApi = {
-  list: () => request<Corpus[]>('/corpus'),
+  list: () =>
+    request<Corpus[]>('/corpus'),
 
-  get: (id: string) => request<Corpus>(`/corpus/${id}`),
+  get: (id: string) =>
+    request<Corpus>(`/corpus/${id}`),
 
   create: (data: {
     name: string
@@ -93,18 +128,39 @@ export const corpusApi = {
 
   update: (
     id: string,
-    data: Partial<{ name: string; description: string }>,
+    data: Partial<{
+      name: string
+      description: string
+    }>,
   ) =>
     request<Corpus>(`/corpus/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
 
-  updateLevel0Config: (id: string, config: Level0Config) =>
-    request<Corpus>(`/corpus/${id}/level0-config`, {
-      method: 'PUT',
-      body: JSON.stringify({ config }),
-    }),
+  updateLevel0Config: (
+    id: string,
+    config: Level0Config,
+  ) =>
+    request<Corpus>(
+      `/corpus/${id}/level0-config`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ config }),
+      },
+    ),
+
+  updateLevel1Config: (
+    id: string,
+    config: Level1Config,
+  ) =>
+    request<Corpus>(
+      `/corpus/${id}/level1-config`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ config }),
+      },
+    ),
 
   delete: (id: string) =>
     request<void>(`/corpus/${id}`, {
@@ -114,12 +170,19 @@ export const corpusApi = {
 
 export const documentApi = {
   list: (corpusId: string) =>
-    request<DocumentSummary[]>(`/documentos?corpusId=${corpusId}`),
+    request<DocumentSummary[]>(
+      `/documentos?corpusId=${corpusId}`,
+    ),
 
-  get: (id: string) => request<Document>(`/documentos/${id}`),
+  get: (id: string) =>
+    request<Document>(
+      `/documentos/${id}`,
+    ),
 
   getLevel0: (id: string) =>
-    request<Level0Data>(`/documentos/${id}/level0`),
+    request<Level0Data>(
+      `/documentos/${id}/level0`,
+    ),
 
   getLevel0Progress: (id: string) =>
     request<Level0ProgressResponse>(
@@ -133,13 +196,38 @@ export const documentApi = {
 
   updateLevel0Config: (
     id: string,
-    overrides: Level0ConfigOverrides | null,
+    overrides:
+      | Level0ConfigOverrides
+      | null,
   ) =>
     request<DocumentLevel0ConfigResponse>(
       `/documentos/${id}/level0/config`,
       {
         method: 'PUT',
-        body: JSON.stringify({ overrides }),
+        body: JSON.stringify({
+          overrides,
+        }),
+      },
+    ),
+
+  getLevel1Config: (id: string) =>
+    request<DocumentLevel1ConfigResponse>(
+      `/documentos/${id}/level1/config`,
+    ),
+
+  updateLevel1Config: (
+    id: string,
+    overrides:
+      | Level1ConfigOverrides
+      | null,
+  ) =>
+    request<DocumentLevel1ConfigResponse>(
+      `/documentos/${id}/level1/config`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({
+          overrides,
+        }),
       },
     ),
 
@@ -156,44 +244,92 @@ export const documentApi = {
     const token = getToken()
     const formData = new FormData()
 
-    formData.append('file', payload.file)
-    formData.append('corpusId', payload.corpusId)
-    formData.append('title', payload.title)
+    formData.append(
+      'file',
+      payload.file,
+    )
+    formData.append(
+      'corpusId',
+      payload.corpusId,
+    )
+    formData.append(
+      'title',
+      payload.title,
+    )
 
-    if (payload.author) formData.append('author', payload.author)
+    if (payload.author) {
+      formData.append(
+        'author',
+        payload.author,
+      )
+    }
+
     if (payload.language) {
-      formData.append('language', payload.language)
-    }
-    if (payload.documentType) {
-      formData.append('documentType', payload.documentType)
-    }
-    if (payload.description) {
-      formData.append('description', payload.description)
-    }
-    if (typeof payload.pageCount === 'number') {
-      formData.append('pageCount', String(payload.pageCount))
+      formData.append(
+        'language',
+        payload.language,
+      )
     }
 
-    const res = await fetch(`${BASE}/documentos/upload`, {
-      method: 'POST',
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    if (payload.documentType) {
+      formData.append(
+        'documentType',
+        payload.documentType,
+      )
+    }
+
+    if (payload.description) {
+      formData.append(
+        'description',
+        payload.description,
+      )
+    }
+
+    if (
+      typeof payload.pageCount ===
+      'number'
+    ) {
+      formData.append(
+        'pageCount',
+        String(payload.pageCount),
+      )
+    }
+
+    const res = await fetch(
+      `${BASE}/documentos/upload`,
+      {
+        method: 'POST',
+        headers: {
+          ...(token
+            ? {
+                Authorization: `Bearer ${token}`,
+              }
+            : {}),
+        },
+        body: formData,
       },
-      body: formData,
-    })
+    )
 
     if (!res.ok) {
-      const msg = await res.text().catch(() => res.statusText)
-      throw new Error(msg || `HTTP ${res.status}`)
+      const msg = await res
+        .text()
+        .catch(() => res.statusText)
+
+      throw new Error(
+        msg || `HTTP ${res.status}`,
+      )
     }
 
     return res.json()
   },
 
   processLevel0: (id: string) =>
-    request<{ started: true }>(`/documentos/${id}/level0/process`, {
-      method: 'POST',
-    }),
+    request<{ started: true }>(
+      `/documentos/${id}/level0/process`,
+      {
+        method: 'POST',
+      },
+    ),
 
   create: (data: {
     corpusId: string
@@ -211,52 +347,101 @@ export const documentApi = {
     }),
 
   delete: (id: string) =>
-    request<void>(`/documentos/${id}`, {
-      method: 'DELETE',
-    }),
+    request<void>(
+      `/documentos/${id}`,
+      {
+        method: 'DELETE',
+      },
+    ),
 
   initAnalysis: (
     id: string,
     aiProvider: AiProvider = 'CLAUDE',
   ) =>
-    request<Analysis>(`/documentos/${id}/analisis`, {
-      method: 'POST',
-      body: JSON.stringify({ aiProvider }),
-    }),
+    request<Analysis>(
+      `/documentos/${id}/analisis`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          aiProvider,
+        }),
+      },
+    ),
 }
 
 export const analysisApi = {
-  get: (id: string) => request<Analysis>(`/analisis/${id}`),
+  get: (id: string) =>
+    request<Analysis>(
+      `/analisis/${id}`,
+    ),
 
-  process: (id: string, level: 1 | 2 | 3 | 4 | 5) =>
-    request(`/analisis/${id}/nivel/${level}/process`, {
-      method: 'POST',
-    }),
+  process: (
+    id: string,
+    level: 1 | 2 | 3 | 4 | 5,
+  ) =>
+    request(
+      `/analisis/${id}/nivel/${level}/process`,
+      {
+        method: 'POST',
+      },
+    ),
+
+  getLevel1Preview: (id: string) =>
+    request<Level1PreviewResponse>(
+      `/analisis/${id}/nivel/1/preview`,
+    ),
+
+  getLevel1Metadata: (id: string) =>
+    request<Level1MetadataResponse>(
+      `/analisis/${id}/nivel/1/metadata`,
+    ),
 
   getLevel1: (id: string) =>
-    request<PrimaryMetaphor[]>(`/analisis/${id}/nivel/1`),
+    request<PrimaryMetaphor[]>(
+      `/analisis/${id}/nivel/1`,
+    ),
 
   getLevel2: (id: string) =>
-    request<ConventionalMetaphor[]>(`/analisis/${id}/nivel/2`),
+    request<ConventionalMetaphor[]>(
+      `/analisis/${id}/nivel/2`,
+    ),
 
   getLevel3: (id: string) =>
-    request<MetaphoricalScenario[]>(`/analisis/${id}/nivel/3`),
+    request<MetaphoricalScenario[]>(
+      `/analisis/${id}/nivel/3`,
+    ),
 
   getLevel4: (id: string) =>
-    request<MetaphorRegime[]>(`/analisis/${id}/nivel/4`),
+    request<MetaphorRegime[]>(
+      `/analisis/${id}/nivel/4`,
+    ),
 
   getLevel5: (id: string) =>
-    request<CulturalNarrative>(`/analisis/${id}/nivel/5`),
+    request<CulturalNarrative>(
+      `/analisis/${id}/nivel/5`,
+    ),
 
-  approveAll: (id: string, level: 1 | 2 | 3 | 4 | 5) =>
-    request(`/analisis/${id}/nivel/${level}/approve-all`, {
-      method: 'POST',
-    }),
+  approveAll: (
+    id: string,
+    level: 1 | 2 | 3 | 4 | 5,
+  ) =>
+    request(
+      `/analisis/${id}/nivel/${level}/approve-all`,
+      {
+        method: 'POST',
+      },
+    ),
 
-  approve: (id: string, level: 1 | 2 | 3 | 4 | 5) =>
-    request(`/analisis/${id}/nivel/${level}/approve`, {
-      method: 'POST',
-    }),
+  approve: (
+    id: string,
+    level: 1 | 2 | 3 | 4 | 5,
+  ) =>
+    request(
+      `/analisis/${id}/nivel/${level}/approve`,
+      {
+        method: 'POST',
+      },
+    ),
 
   updateItemStatus: (
     model: string,
@@ -264,8 +449,14 @@ export const analysisApi = {
     status: ItemStatus,
     analystNote?: string,
   ) =>
-    request(`/analisis/items/${model}/${itemId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status, analystNote }),
-    }),
+    request(
+      `/analisis/items/${model}/${itemId}/status`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status,
+          analystNote,
+        }),
+      },
+    ),
 }

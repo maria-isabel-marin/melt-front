@@ -9,6 +9,7 @@ import type {
   DocumentType,
   Language,
   Level0Config,
+  Level1Config,
 } from '@/types'
 import { Button } from '@/components/ui/button'
 import {
@@ -35,7 +36,9 @@ import {
 import { LocalizedLevelBadge } from '@/components/i18n/LocalizedLevelBadge'
 import { useI18n } from '@/components/i18n/I18nProvider'
 import { Level0ConfigDialog } from '@/components/config/Level0ConfigDialog'
+import { Level1ConfigDialog } from '@/components/config/Level1ConfigDialog'
 import { DEFAULT_LEVEL0_CONFIG } from '@/lib/level0-config'
+import { DEFAULT_LEVEL1_CONFIG } from '@/lib/level1-config'
 
 const LANGUAGES: Language[] = ['ENGLISH', 'SPANISH']
 
@@ -82,6 +85,8 @@ export default function CorpusDetailPage() {
   )
   const [showLevel0Config, setShowLevel0Config] = useState(false)
   const [savingLevel0Config, setSavingLevel0Config] = useState(false)
+  const [showLevel1Config, setShowLevel1Config] = useState(false)
+  const [savingLevel1Config, setSavingLevel1Config] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -157,6 +162,36 @@ export default function CorpusDetailPage() {
       )
     } finally {
       setSavingLevel0Config(false)
+    }
+  }
+
+  const handleSaveLevel1Config = async (
+    config: Level1Config,
+  ) => {
+    setSavingLevel1Config(true)
+
+    try {
+      const updatedCorpus =
+        await corpusApi.updateLevel1Config(
+          id,
+          config,
+        )
+
+      setCorpus(updatedCorpus)
+      setShowLevel1Config(false)
+
+      const refreshedDocuments =
+        await documentApi.list(id)
+
+      setDocs(refreshedDocuments)
+    } catch (configError: unknown) {
+      alert(
+        configError instanceof Error
+          ? configError.message
+          : t('level1Config.saveError'),
+      )
+    } finally {
+      setSavingLevel1Config(false)
     }
   }
 
@@ -300,6 +335,14 @@ export default function CorpusDetailPage() {
               >
                 <Settings2 size={16} />
                 {t('level0Config.configure')}
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => setShowLevel1Config(true)}
+              >
+                <Settings2 size={16} />
+                {t('level1Config.configure')}
               </Button>
 
               {docs.length > 0 && (
@@ -450,6 +493,19 @@ export default function CorpusDetailPage() {
         }
         saving={savingLevel0Config}
         onSave={handleSaveLevel0Config}
+      />
+
+      <Level1ConfigDialog
+        open={showLevel1Config}
+        onClose={() => setShowLevel1Config(false)}
+        scope="corpus"
+        config={
+          corpus?.effectiveLevel1Config ??
+          corpus?.level1Config ??
+          DEFAULT_LEVEL1_CONFIG
+        }
+        saving={savingLevel1Config}
+        onSave={handleSaveLevel1Config}
       />
 
       <Dialog
