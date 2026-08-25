@@ -19,6 +19,10 @@ import type {
   Level0Data,
   DocumentLevel0ConfigResponse,
   Level0ConfigOverrides,
+  DocumentLevel1ConfigResponse,
+  Level1ConfigOverrides,
+  Level1PreviewResponse,
+  Level1RunMetadata,
 } from "@/types";
 import { LocalizedLevelBadge } from "@/components/i18n/LocalizedLevelBadge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +31,7 @@ import { LevelWrapper } from "@/components/analysis/LevelWrapper";
 import { Level0 } from "@/components/analysis/Level0";
 import { Level0Visualization } from "@/components/analysis/Level0Visualization";
 import { Level1 } from "@/components/analysis/Level1";
+import { Level1Visualization } from "@/components/analysis/Level1Visualization";
 import { Level2 } from "@/components/analysis/Level2";
 import { Level3 } from "@/components/analysis/Level3";
 import { Level4 } from "@/components/analysis/Level4";
@@ -35,10 +40,11 @@ import { ArrowLeft, FileText, SearchCheck, Settings2, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/components/i18n/I18nProvider";
 import { Level0ConfigDialog } from "@/components/config/Level0ConfigDialog";
+import { Level1ConfigDialog } from "@/components/config/Level1ConfigDialog";
 
 type Tab = 0 | 1 | 2 | 3 | 4 | 5;
 type Level0View = "processing" | "visualization";
-
+type Level1View = "review" | "visualization";
 
 export default function DocumentPage() {
   const router = useRouter();
@@ -67,6 +73,17 @@ export default function DocumentPage() {
   const [showLevel0Config, setShowLevel0Config] = useState(false);
   const [savingLevel0Config, setSavingLevel0Config] = useState(false);
 
+  const [level1View, setLevel1View] = useState<Level1View>("review");
+  const [level1ConfigInfo, setLevel1ConfigInfo] =
+    useState<DocumentLevel1ConfigResponse | null>(null);
+  const [showLevel1Config, setShowLevel1Config] = useState(false);
+  const [savingLevel1Config, setSavingLevel1Config] = useState(false);
+  const [level1Preview, setLevel1Preview] =
+    useState<Level1PreviewResponse | null>(null);
+  const [level1Metadata, setLevel1Metadata] =
+    useState<Level1RunMetadata | null>(null);
+  const [level1InfoLoading, setLevel1InfoLoading] = useState(false);
+
   const [l1, setL1] = useState<PrimaryMetaphor[]>([]);
   const [l2, setL2] = useState<ConventionalMetaphor[]>([]);
   const [l3, setL3] = useState<MetaphoricalScenario[]>([]);
@@ -92,16 +109,12 @@ export default function DocumentPage() {
 
   const progressStepTitle = (key: string, fallback: string) => {
     const translated = t(`progressSteps.${key}.title`);
-    return translated === `progressSteps.${key}.title`
-      ? fallback
-      : translated;
+    return translated === `progressSteps.${key}.title` ? fallback : translated;
   };
 
   const progressStepDescription = (key: string) => {
     const translated = t(`progressSteps.${key}.description`);
-    return translated === `progressSteps.${key}.description`
-      ? ""
-      : translated;
+    return translated === `progressSteps.${key}.description` ? "" : translated;
   };
 
   const fetchAnalysis = useCallback(async (analysisId: string) => {
@@ -176,6 +189,38 @@ export default function DocumentPage() {
     }
   }, [docId]);
 
+  const loadLevel1Config = useCallback(async () => {
+    try {
+      const data = await documentApi.getLevel1Config(docId);
+      setLevel1ConfigInfo(data);
+      return data;
+    } catch {
+      return null;
+    }
+  }, [docId]);
+
+  const loadLevel1Preview = useCallback(async (analysisId: string) => {
+    try {
+      const data = await analysisApi.getLevel1Preview(analysisId);
+      setLevel1Preview(data);
+      return data;
+    } catch {
+      setLevel1Preview(null);
+      return null;
+    }
+  }, []);
+
+  const loadLevel1Metadata = useCallback(async (analysisId: string) => {
+    try {
+      const data = await analysisApi.getLevel1Metadata(analysisId);
+      setLevel1Metadata(data.metadata);
+      return data.metadata;
+    } catch {
+      setLevel1Metadata(null);
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -187,10 +232,18 @@ export default function DocumentPage() {
         await Promise.all([
           loadLevel0Progress(),
           loadLevel0Config(),
+          loadLevel1Config(),
         ]);
 
         if (result.analysis?.level0Status === "APPROVED") {
           await loadLevel0();
+        }
+
+        if (result.analysis) {
+          await Promise.all([
+            loadLevel1Preview(result.analysis.id),
+            loadLevel1Metadata(result.analysis.id),
+          ]);
         }
       } catch {
         // ignore for now
@@ -209,7 +262,21 @@ export default function DocumentPage() {
     loadLevel0,
     loadLevel0Progress,
     loadLevel0Config,
+    loadLevel1Config,
+    loadLevel1Preview,
+    loadLevel1Metadata,
   ]);
+
+  useEffect(() => {
+    if (!analysis || analysis.level0Status !== "APPROVED") return;
+
+    setLevel1InfoLoading(true);
+
+    Promise.all([
+      loadLevel1Preview(analysis.id),
+      loadLevel1Metadata(analysis.id),
+    ]).finally(() => setLevel1InfoLoading(false));
+  }, [analysis, loadLevel1Preview, loadLevel1Metadata]);
 
   useEffect(() => {
     if (!analysis) return;
@@ -262,8 +329,13 @@ export default function DocumentPage() {
   useEffect(() => {
     if (analysis && tab > 0 && analysis.level0Status === "APPROVED") {
       loadLevelData(analysis.id, tab as Exclude<Tab, 0>);
+
+      if (tab === 1) {
+        loadLevel1Metadata(analysis.id);
+        loadLevel1Preview(analysis.id);
+      }
     }
-  }, [tab, analysis, loadLevelData]);
+  }, [tab, analysis, loadLevelData, loadLevel1Metadata, loadLevel1Preview]);
 
   useEffect(() => {
     if (!(processingLevel0 || analysis?.level0Status === "PROCESSING")) return;
@@ -303,6 +375,7 @@ export default function DocumentPage() {
     try {
       const a = await documentApi.initAnalysis(doc.id);
       setAnalysis(a);
+      await Promise.all([loadLevel1Preview(a.id), loadLevel1Metadata(a.id)]);
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : t("documentPage.initializeError"));
     } finally {
@@ -339,6 +412,42 @@ export default function DocumentPage() {
     }
   };
 
+  const handleSaveLevel1Config = async (
+    overrides: Level1ConfigOverrides | null,
+  ) => {
+    setSavingLevel1Config(true);
+    setLevel1InfoLoading(true);
+
+    try {
+      const updatedConfig = await documentApi.updateLevel1Config(
+        docId,
+        overrides,
+      );
+      setLevel1ConfigInfo(updatedConfig);
+      setLevel1Preview(null);
+      setShowLevel1Config(false);
+      if (analysis) {
+        await Promise.all([
+          loadLevel1Config(),
+          loadLevel1Preview(analysis.id),
+          loadLevel1Metadata(analysis.id),
+          fetchAnalysis(analysis.id),
+        ]);
+      } else {
+        await loadLevel1Config();
+      }
+    } catch (configError: unknown) {
+      alert(
+        configError instanceof Error
+          ? configError.message
+          : t("level1Config.saveError"),
+      );
+    } finally {
+      setLevel1InfoLoading(false);
+      setSavingLevel1Config(false);
+    }
+  };
+
   const handleProcessLevel0 = async () => {
     if (!doc || processingLevel0) return;
 
@@ -351,17 +460,52 @@ export default function DocumentPage() {
       await loadLevel0Progress();
     } catch (e: unknown) {
       setProcessingLevel0(false);
-      alert(e instanceof Error ? e.message : t("documentPage.level0ProcessError"));
+      alert(
+        e instanceof Error ? e.message : t("documentPage.level0ProcessError"),
+      );
     }
   };
 
   const handleProcess = async (level: 1 | 2 | 3 | 4 | 5) => {
     if (!analysis) return;
 
+    if (level === 1) {
+      const preview = await loadLevel1Preview(analysis.id);
+
+      if (!preview?.canProcess) {
+        alert(t("level1.cannotProcess"));
+        return;
+      }
+
+      const confirmed = confirm(
+        t("level1.confirmProcess", {
+          sentences: preview.selectedSentences,
+          approaches: preview.approaches
+            .map((approach) => t(`level1.approaches.${approach}`))
+            .join(" + "),
+          requests: preview.estimatedRequests,
+        }),
+      );
+
+      if (!confirmed) return;
+    }
+
     setProcessing(level);
+
     try {
       await analysisApi.process(analysis.id, level);
-      await fetchAnalysis(analysis.id);
+      const updated = await fetchAnalysis(analysis.id);
+
+      if (level === 1) {
+        await Promise.all([
+          loadLevelData(analysis.id, 1),
+          loadLevel1Metadata(analysis.id),
+          loadLevel1Preview(analysis.id),
+        ]);
+        setLevel1View("review");
+      }
+
+      return updated;
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : t("documentPage.processError"));
     } finally {
@@ -421,6 +565,14 @@ export default function DocumentPage() {
     processingLevel0 ||
     analysis?.level0Status === "PROCESSING" ||
     level0Progress?.status === "PROCESSING";
+
+  const level1ConfigLocked = [
+    analysis?.level1Status,
+    analysis?.level2Status,
+    analysis?.level3Status,
+    analysis?.level4Status,
+    analysis?.level5Status,
+  ].some((status) => status === "PROCESSING");
 
   const API_BASE = (
     process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api"
@@ -499,7 +651,6 @@ export default function DocumentPage() {
                       {t("documentPage.summary.description")}
                     </p>
                   </div>
-
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
@@ -794,20 +945,163 @@ export default function DocumentPage() {
           )}
 
           {level0Ready && analysis && tab === 1 && (
-            <LevelWrapper
-              level={1}
-              status={getLevelStatus(1)}
-              onProcess={() => handleProcess(1)}
-              onApproveAll={() => handleApproveAll(1)}
-              onApprove={() => handleApprove(1)}
-              processing={processing === 1}
-              approving={approving === 1}
-            >
-              <Level1
-                metaphors={l1}
-                onRefresh={() => analysis && loadLevelData(analysis.id, 1)}
-              />
-            </LevelWrapper>
+            <div className="space-y-5">
+              <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {t("level1Config.level1Configuration")}
+                    </p>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      {level1ConfigInfo?.source === "DOCUMENT"
+                        ? t("level1Config.sourceDocument")
+                        : t("level1Config.sourceCorpus")}
+                    </p>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowLevel1Config(true)}
+                    disabled={level1ConfigLocked}
+                  >
+                    <Settings2 size={14} />
+                    {t("level1Config.change")}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-blue-950">
+                      {t("level1.preview.title")}
+                    </p>
+                    <p className="mt-1 text-xs text-blue-900/75">
+                      {t("level1.preview.description")}
+                    </p>
+                  </div>
+
+                  {level1InfoLoading && <Spinner size="sm" />}
+                </div>
+
+                {level1Preview && (
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                    <div className="rounded-lg bg-white px-3 py-2.5">
+                      <span className="text-[11px] uppercase tracking-wide text-gray-400">
+                        {t("level1.preview.available")}
+                      </span>
+                      <p className="mt-0.5 text-sm font-semibold text-gray-900">
+                        {level1Preview.totalAvailableSentences.toLocaleString(
+                          numberLocale,
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg bg-white px-3 py-2.5">
+                      <span className="text-[11px] uppercase tracking-wide text-gray-400">
+                        {t("level1.preview.selected")}
+                      </span>
+                      <p className="mt-0.5 text-sm font-semibold text-gray-900">
+                        {level1Preview.selectedSentences.toLocaleString(
+                          numberLocale,
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg bg-white px-3 py-2.5">
+                      <span className="text-[11px] uppercase tracking-wide text-gray-400">
+                        {t("level1.preview.batchSize")}
+                      </span>
+                      <p className="mt-0.5 text-sm font-semibold text-gray-900">
+                        {level1Preview.batchSize}
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg bg-white px-3 py-2.5">
+                      <span className="text-[11px] uppercase tracking-wide text-gray-400">
+                        {t("level1.preview.approaches")}
+                      </span>
+                      <p className="mt-0.5 text-sm font-semibold text-gray-900">
+                        {level1Preview.approaches
+                          .map((approach) => t(`level1.approaches.${approach}`))
+                          .join(" + ")}
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg bg-white px-3 py-2.5">
+                      <span className="text-[11px] uppercase tracking-wide text-gray-400">
+                        {t("level1.preview.requests")}
+                      </span>
+                      <p className="mt-0.5 text-sm font-semibold text-gray-900">
+                        {level1Preview.estimatedRequests}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <p className="mt-3 text-xs text-blue-900/70">
+                  {t("level1.preview.contextPolicy")}
+                </p>
+              </div>
+
+              {getLevelStatus(1) === "OUTDATED" && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                  {t("level1.outdatedWarning")}
+                </div>
+              )}
+
+              {(l1.length > 0 || getLevelStatus(1) !== "PENDING") && (
+                <div className="inline-flex rounded-xl border border-gray-200 bg-gray-50 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setLevel1View("review")}
+                    className={cn(
+                      "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                      level1View === "review"
+                        ? "bg-white text-blue-700 shadow-sm"
+                        : "text-gray-500 hover:text-gray-800",
+                    )}
+                  >
+                    {t("level1.views.review")}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setLevel1View("visualization")}
+                    className={cn(
+                      "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                      level1View === "visualization"
+                        ? "bg-white text-blue-700 shadow-sm"
+                        : "text-gray-500 hover:text-gray-800",
+                    )}
+                  >
+                    {t("level1.views.visualization")}
+                  </button>
+                </div>
+              )}
+
+              <LevelWrapper
+                level={1}
+                status={getLevelStatus(1)}
+                onProcess={() => handleProcess(1)}
+                onApproveAll={() => handleApproveAll(1)}
+                onApprove={() => handleApprove(1)}
+                processing={processing === 1}
+                approving={approving === 1}
+              >
+                {level1View === "review" ? (
+                  <Level1
+                    metaphors={l1}
+                    onRefresh={() => analysis && loadLevelData(analysis.id, 1)}
+                  />
+                ) : (
+                  <Level1Visualization
+                    metaphors={l1}
+                    metadata={level1Metadata}
+                  />
+                )}
+              </LevelWrapper>
+            </div>
           )}
 
           {level0Ready && analysis && tab === 2 && (
@@ -890,6 +1184,18 @@ export default function DocumentPage() {
         saving={savingLevel0Config}
         disabled={level0IsProcessing}
         onSave={handleSaveLevel0Config}
+      />
+
+      <Level1ConfigDialog
+        open={showLevel1Config}
+        onClose={() => setShowLevel1Config(false)}
+        scope="document"
+        corpusConfig={level1ConfigInfo?.corpusConfig}
+        effectiveConfig={level1ConfigInfo?.effectiveConfig}
+        source={level1ConfigInfo?.source}
+        saving={savingLevel1Config}
+        disabled={level1ConfigLocked}
+        onSave={handleSaveLevel1Config}
       />
     </div>
   );

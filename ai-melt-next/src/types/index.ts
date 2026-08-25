@@ -76,6 +76,48 @@ export interface DocumentLevel0ConfigResponse {
   source: Level0ConfigSource
 }
 
+
+// ─── Level 1 configuration ────────────────────────────────────────────────────
+
+export type Level1Approach = 'CLAUDE' | 'OPENAI'
+export type Level1SentenceMode = 'ALL' | 'LIMITED'
+export type Level1SentenceSelectionStrategy =
+  | 'RANDOM'
+  | 'DISTRIBUTED'
+  | 'FIRST'
+  | 'BY_CHAPTER'
+
+export interface Level1Config {
+  approaches: Level1Approach[]
+  sentenceSelection: {
+    mode: Level1SentenceMode
+    maxSentences: number | null
+    strategy: Level1SentenceSelectionStrategy
+    randomSeed: number
+  }
+  batchSize: number
+  output: {
+    ontologicalMappings: boolean
+    epistemicMappings: boolean
+  }
+}
+
+export interface Level1ConfigOverrides {
+  approaches?: Level1Approach[]
+  sentenceSelection?: Partial<Level1Config['sentenceSelection']>
+  batchSize?: number
+  output?: Partial<Level1Config['output']>
+}
+
+export type Level1ConfigSource = 'CORPUS' | 'DOCUMENT'
+
+export interface DocumentLevel1ConfigResponse {
+  corpusConfig: Level1Config
+  overrides: Level1ConfigOverrides | null
+  effectiveConfig: Level1Config
+  source: Level1ConfigSource
+}
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 export interface JwtPayload {
@@ -97,6 +139,8 @@ export interface Corpus {
   textualGenre?: string
   level0Config?: Level0Config | null
   effectiveLevel0Config?: Level0Config
+  level1Config?: Level1Config | null
+  effectiveLevel1Config?: Level1Config
   createdAt: string
   updatedAt: string
   _count?: { documents: number }
@@ -113,6 +157,7 @@ export interface DocumentSummary {
   pageCount?: number
   tokenCount?: number
   level0ConfigOverrides?: Level0ConfigOverrides | null
+  level1ConfigOverrides?: Level1ConfigOverrides | null
   createdAt: string
   analysis?: AnalysisSummary | null
 }
@@ -141,6 +186,7 @@ export interface AnalysisSummary {
 
 export interface Analysis extends AnalysisSummary {
   documentId: string
+  level1Metadata?: Level1RunMetadata | null
   createdAt: string
 }
 
@@ -289,6 +335,70 @@ export interface Level0Progress {
 
 // ─── Level 1 — Primary Metaphors ──────────────────────────────────────────────
 
+
+export interface Level1ApproachStats {
+  approach: Level1Approach
+  model: string | null
+  requests: number
+  inputTokens: number
+  outputTokens: number
+  elapsedMs: number
+  metaphorCount: number
+}
+
+export interface Level1ApproachComparison {
+  approachA: Level1Approach
+  approachB: Level1Approach
+  kappaSentence: number | null
+  sharedSourceDomains: number
+  sharedConceptualMetaphors: number
+}
+
+export interface Level1RunMetadata {
+  version?: string
+  level?: string
+  completedAt?: string
+  methodology?: Record<string, unknown>
+  config?: Level1Config
+  totalAvailableSentences?: number
+  selectedSentences?: number
+  selectedSentenceIds?: string[]
+  batchSize?: number
+  estimatedRequests?: number
+  actualRequests?: number
+  approachStats?: Level1ApproachStats[]
+  comparisons?: Level1ApproachComparison[]
+  crossApproachDistribution?: Record<string, number>
+  totalMetaphorRows?: number
+}
+
+export interface Level1PreviewResponse {
+  analysisId: string
+  level0Status: LevelStatus
+  level1Status: LevelStatus
+  approaches: Level1Approach[]
+  totalAvailableSentences: number
+  selectedSentences: number
+  selectedSentenceIds: string[]
+  batchSize: number
+  batchesPerApproach: number
+  estimatedRequests: number
+  sentenceSelection: Level1Config['sentenceSelection']
+  output: Level1Config['output']
+  contextPolicy: {
+    previousSentence: boolean
+    currentSentence: boolean
+    nextSentence: boolean
+  }
+  canProcess: boolean
+}
+
+export interface Level1MetadataResponse {
+  analysisId: string
+  level1Status: LevelStatus
+  metadata: Level1RunMetadata | null
+}
+
 export interface OntologicalMapping {
   id: string
   primaryMetaphorId: string
@@ -313,9 +423,12 @@ export interface EpistemicMapping {
 export interface PrimaryMetaphor {
   id: string
   analysisId: string
+  sentenceId?: string
   page?: number
-  metaphoricalExpression: string
+  chapter?: string
   context?: string
+  expandedContext?: string
+  metaphoricalExpression: string
   focus?: string
   focusLemma?: string
   focusPartOfSpeech?: string
@@ -324,6 +437,10 @@ export interface PrimaryMetaphor {
   sourceDomain?: string
   targetDomain?: string
   conceptualMetaphor?: string
+  approach?: Level1Approach
+  modelName?: string
+  modelConfidence?: number
+  crossApproachConfidence: number
   itemStatus: ItemStatus
   analystNote?: string
   aiGenerated: boolean
