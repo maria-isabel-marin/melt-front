@@ -6,6 +6,7 @@ import {
   documentApi,
   analysisApi,
   type Level0ProgressResponse,
+  type Level1PreviewWithApiAccess,
 } from "@/lib/api";
 import type {
   Document,
@@ -21,7 +22,6 @@ import type {
   Level0ConfigOverrides,
   DocumentLevel1ConfigResponse,
   Level1ConfigOverrides,
-  Level1PreviewResponse,
   Level1RunMetadata,
 } from "@/types";
 import { LocalizedLevelBadge } from "@/components/i18n/LocalizedLevelBadge";
@@ -41,6 +41,7 @@ import { cn } from "@/lib/utils";
 import { useI18n } from "@/components/i18n/I18nProvider";
 import { Level0ConfigDialog } from "@/components/config/Level0ConfigDialog";
 import { Level1ConfigDialog } from "@/components/config/Level1ConfigDialog";
+import { Level1ApiAccessCard } from "@/components/config/Level1ApiAccessCard";
 
 type Tab = 0 | 1 | 2 | 3 | 4 | 5;
 type Level0View = "processing" | "visualization";
@@ -79,7 +80,7 @@ export default function DocumentPage() {
   const [showLevel1Config, setShowLevel1Config] = useState(false);
   const [savingLevel1Config, setSavingLevel1Config] = useState(false);
   const [level1Preview, setLevel1Preview] =
-    useState<Level1PreviewResponse | null>(null);
+    useState<Level1PreviewWithApiAccess | null>(null);
   const [level1Metadata, setLevel1Metadata] =
     useState<Level1RunMetadata | null>(null);
   const [level1InfoLoading, setLevel1InfoLoading] = useState(false);
@@ -106,6 +107,11 @@ export default function DocumentPage() {
 
   const documentLanguageLabel = (value?: string) =>
     value ? t(`documentLanguages.${value}`) : t("common.unknown");
+
+  const level1ApiModeLabel = (mode?: "MELT" | "PERSONAL") =>
+    mode === "PERSONAL"
+      ? t("level1ApiAccess.sourcePersonal")
+      : t("level1ApiAccess.sourceMelt");
 
   const progressStepTitle = (key: string, fallback: string) => {
     const translated = t(`progressSteps.${key}.title`);
@@ -448,6 +454,18 @@ export default function DocumentPage() {
     }
   };
 
+  const handleLevel1ApiAccessChanged = async () => {
+    if (!analysis) return;
+
+    setLevel1InfoLoading(true);
+
+    try {
+      await loadLevel1Preview(analysis.id);
+    } finally {
+      setLevel1InfoLoading(false);
+    }
+  };
+
   const handleProcessLevel0 = async () => {
     if (!doc || processingLevel0) return;
 
@@ -472,19 +490,45 @@ export default function DocumentPage() {
     if (level === 1) {
       const preview = await loadLevel1Preview(analysis.id);
 
+      if (
+        preview?.apiAccess.mode === "PERSONAL" &&
+        !preview.apiAccess.selectedModeReady
+      ) {
+        const missingProviders = (["OPENAI", "CLAUDE"] as const)
+          .filter((provider) => {
+            const info = preview.apiAccess.providers[provider];
+            return info.required && !info.ready;
+          })
+          .map((provider) =>
+            provider === "OPENAI"
+              ? t("level1ApiAccess.providers.OPENAI")
+              : t("level1ApiAccess.providers.CLAUDE"),
+          )
+          .join(", ");
+
+        alert(
+          t("level1ApiAccess.cannotProcessMissing", {
+            providers: missingProviders || t("common.unknown"),
+          }),
+        );
+        return;
+      }
+
       if (!preview?.canProcess) {
         alert(t("level1.cannotProcess"));
         return;
       }
 
       const confirmed = confirm(
-        t("level1.confirmProcess", {
+        `${t("level1ApiAccess.sourceLabel")}: ${level1ApiModeLabel(
+          preview.apiAccess.mode,
+        )}\n\n${t("level1.confirmProcess", {
           sentences: preview.selectedSentences,
           approaches: preview.approaches
             .map((approach) => t(`level1.approaches.${approach}`))
             .join(" + "),
           requests: preview.estimatedRequests,
-        }),
+        })}`,
       );
 
       if (!confirmed) return;
@@ -573,6 +617,9 @@ export default function DocumentPage() {
     analysis?.level4Status,
     analysis?.level5Status,
   ].some((status) => status === "PROCESSING");
+
+  const level1ApiAccessLocked =
+    analysis?.level1Status === "PROCESSING";
 
   const API_BASE = (
     process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api"
@@ -946,6 +993,12 @@ export default function DocumentPage() {
 
           {level0Ready && analysis && tab === 1 && (
             <div className="space-y-5">
+              <Level1ApiAccessCard
+                documentId={docId}
+                disabled={level1ApiAccessLocked}
+                onChanged={handleLevel1ApiAccessChanged}
+              />
+
               <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -1035,6 +1088,50 @@ export default function DocumentPage() {
                       <p className="mt-0.5 text-sm font-semibold text-gray-900">
                         {level1Preview.estimatedRequests}
                       </p>
+                    </div>
+                  </div>
+                )}
+
+                {level1Preview?.apiAccess && (
+                  <div className="mt-4 rounded-lg border border-blue-100 bg-white px-3 py-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs font-semibold text-gray-700">
+                        {t("level1ApiAccess.sourceLabel")}: {" "}
+                        {level1ApiModeLabel(level1Preview.apiAccess.mode)}
+                      </p>
+
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                          level1Preview.apiAccess.selectedModeReady
+                            ? "bg-green-50 text-green-700"
+                            : "bg-amber-50 text-amber-700",
+                        )}
+                      >
+                        {level1Preview.apiAccess.selectedModeReady
+                          ? t("level1ApiAccess.ready")
+                          : t("level1ApiAccess.missing")}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs">
+                      {level1Preview.approaches.map((approach) => {
+                        const info = level1Preview.apiAccess.providers[approach];
+
+                        return (
+                          <span
+                            key={approach}
+                            className={
+                              info.ready ? "text-green-700" : "text-amber-700"
+                            }
+                          >
+                            {t(`level1.approaches.${approach}`)} {" "}
+                            {info.ready
+                              ? `✓ ${t("level1ApiAccess.ready")}`
+                              : `⚠ ${t("level1ApiAccess.missing")}`}
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

@@ -38,6 +38,7 @@ const en = {
     sample: 'Sample',
     total: 'Total',
     byChapter: 'By chapter',
+    configuration: 'Configuration',
   },
   statuses: {
     PENDING: 'Pending',
@@ -572,6 +573,61 @@ const en = {
     save: 'Save configuration',
     saveError: 'Failed to save Level 1 configuration',
   },
+  level1ApiAccess: {
+    title: 'AI access',
+    description:
+      'Choose which credentials Level 1 should use for this document. MELT shared credentials are subject to shared usage limits; personal credentials use your own provider quota.',
+    melt: {
+      title: 'MELT API',
+      description:
+        'Use the AI credentials included with MELT for this document.',
+      limitNotice:
+        'MELT credentials are shared and may be subject to application-wide usage limits.',
+    },
+    personal: {
+      title: 'Personal API',
+      description:
+        'Use your own OpenAI and/or Anthropic credentials for this document.',
+      billingNotice:
+        'Personal credentials use your own provider quota and may generate charges billed directly by that provider.',
+    },
+    guestUnavailable:
+      'Personal API credentials are unavailable in temporary guest sessions.',
+    providers: {
+      OPENAI: 'OpenAI',
+      CLAUDE: 'Anthropic · Claude',
+    },
+    required: 'Required by current Level 1 configuration',
+    configured: 'Configured',
+    notConfigured: 'Not configured',
+    missingRequiredKey: 'Required key is missing',
+    add: 'Add key',
+    replace: 'Replace',
+    delete: 'Delete',
+    deleteConfirm:
+      'Delete the personal {provider} credential from your account?',
+    cancel: 'Cancel',
+    save: 'Save credential',
+    sourceLabel: 'AI source',
+    sourceMelt: 'MELT API',
+    sourcePersonal: 'Personal API',
+    ready: 'Ready',
+    missing: 'Missing key',
+    cannotProcessMissing:
+      'Level 1 cannot start because the selected personal API source is missing required credentials: {providers}.',
+    refreshError: 'Failed to load AI access settings',
+    modeError: 'Failed to change the Level 1 AI source',
+    saveError: 'Failed to save the personal AI credential',
+    deleteError: 'Failed to delete the personal AI credential',
+    dialog: {
+      addTitle: 'Add {provider} credential',
+      replaceTitle: 'Replace {provider} credential',
+      apiKeyLabel: 'API key',
+      apiKeyPlaceholder: 'Paste your API key',
+      securityNotice:
+        'The key is sent only to the MELT backend, encrypted before storage, and is never returned in full to the frontend after saving.',
+    },
+  },
   level1: {
     approaches: {
       OPENAI: 'OpenAI',
@@ -742,6 +798,7 @@ const es: Messages = {
     sample: 'Muestra',
     total: 'Total',
     byChapter: 'Por capítulo',
+    configuration: 'Configuración',
   },
   statuses: {
     PENDING: 'Pendiente',
@@ -1281,6 +1338,61 @@ const es: Messages = {
     cancel: 'Cancelar',
     save: 'Guardar configuración',
     saveError: 'No se pudo guardar la configuración de Nivel 1',
+  },
+  level1ApiAccess: {
+    title: 'Acceso a IA',
+    description:
+      'Elige qué credenciales debe usar el Nivel 1 para este documento. Las credenciales compartidas de MELT están sujetas a límites de uso compartidos; las credenciales personales usan tu propia cuota del proveedor.',
+    melt: {
+      title: 'API de MELT',
+      description:
+        'Usa las credenciales de IA incluidas en MELT para este documento.',
+      limitNotice:
+        'Las credenciales de MELT son compartidas y pueden estar sujetas a límites de uso de toda la aplicación.',
+    },
+    personal: {
+      title: 'API personal',
+      description:
+        'Usa tus propias credenciales de OpenAI y/o Anthropic para este documento.',
+      billingNotice:
+        'Las credenciales personales usan tu propia cuota del proveedor y pueden generar cargos facturados directamente por ese proveedor.',
+    },
+    guestUnavailable:
+      'Las credenciales personales no están disponibles en sesiones temporales de invitado.',
+    providers: {
+      OPENAI: 'OpenAI',
+      CLAUDE: 'Anthropic · Claude',
+    },
+    required: 'Requerida por la configuración actual de Nivel 1',
+    configured: 'Configurada',
+    notConfigured: 'No configurada',
+    missingRequiredKey: 'Falta la clave requerida',
+    add: 'Agregar clave',
+    replace: 'Reemplazar',
+    delete: 'Eliminar',
+    deleteConfirm:
+      '¿Eliminar la credencial personal de {provider} de tu cuenta?',
+    cancel: 'Cancelar',
+    save: 'Guardar credencial',
+    sourceLabel: 'Fuente de IA',
+    sourceMelt: 'API de MELT',
+    sourcePersonal: 'API personal',
+    ready: 'Preparada',
+    missing: 'Falta clave',
+    cannotProcessMissing:
+      'El Nivel 1 no puede iniciar porque a la API personal seleccionada le faltan credenciales requeridas: {providers}.',
+    refreshError: 'No fue posible cargar la configuración de acceso a IA',
+    modeError: 'No fue posible cambiar la fuente de IA del Nivel 1',
+    saveError: 'No fue posible guardar la credencial personal de IA',
+    deleteError: 'No fue posible eliminar la credencial personal de IA',
+    dialog: {
+      addTitle: 'Agregar credencial de {provider}',
+      replaceTitle: 'Reemplazar credencial de {provider}',
+      apiKeyLabel: 'Clave API',
+      apiKeyPlaceholder: 'Pega tu clave API',
+      securityNotice:
+        'La clave se envía únicamente al backend de MELT, se cifra antes de almacenarse y nunca vuelve a enviarse completa al frontend después de guardarla.',
+    },
   },
   level1: {
     approaches: {
