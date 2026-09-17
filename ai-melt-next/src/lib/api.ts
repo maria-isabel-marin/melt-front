@@ -26,6 +26,45 @@ const BASE =
   process.env.NEXT_PUBLIC_API_URL ??
   'http://localhost:3000/api'
 
+export type Level1ApiMode = 'MELT' | 'PERSONAL'
+export type PersonalAiProvider = 'OPENAI' | 'CLAUDE'
+
+export type PersonalAiCredentialInfo = {
+  configured: boolean
+  keyHint: string | null
+}
+
+export type AiCredentialsStatusResponse = {
+  canUsePersonalCredentials: boolean
+  credentials: {
+    OPENAI: PersonalAiCredentialInfo
+    CLAUDE: PersonalAiCredentialInfo
+  }
+}
+
+export type Level1ApiProviderAccess = {
+  required: boolean
+  source?: Level1ApiMode
+  configured: boolean
+  ready: boolean
+  keyHint: string | null
+}
+
+export type Level1ApiAccessResponse = {
+  mode: Level1ApiMode
+  canUsePersonalCredentials: boolean
+  personalCredentialsReady: boolean
+  selectedModeReady: boolean
+  providers: {
+    OPENAI: Level1ApiProviderAccess
+    CLAUDE: Level1ApiProviderAccess
+  }
+}
+
+export type Level1PreviewWithApiAccess = Level1PreviewResponse & {
+  apiAccess: Level1ApiAccessResponse
+}
+
 export type Level0ProgressResponse = {
   documentId: string
   status:
@@ -59,30 +98,21 @@ async function request<T>(
 
   const res = await fetch(`${BASE}${path}`, {
     ...options,
+    cache: options.cache ?? 'no-store',
+
     headers: {
       'Content-Type': 'application/json',
-      ...(token
-        ? {
-            Authorization: `Bearer ${token}`,
-          }
-        : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
   })
 
   if (!res.ok) {
-    const msg = await res
-      .text()
-      .catch(() => res.statusText)
-
-    throw new Error(
-      msg || `HTTP ${res.status}`,
-    )
+    const msg = await res.text().catch(() => res.statusText)
+    throw new Error(msg || `HTTP ${res.status}`)
   }
 
-  if (res.status === 204) {
-    return undefined as T
-  }
+  if (res.status === 204) return undefined as T
 
   return res.json()
 }
@@ -106,6 +136,38 @@ export const authApi = {
         method: 'POST',
       },
     ),
+}
+
+export const aiCredentialsApi = {
+  getStatus: () =>
+    request<AiCredentialsStatusResponse>(
+      '/ai-credentials',
+    ),
+
+  save: (
+    provider: PersonalAiProvider,
+    apiKey: string,
+  ) =>
+    request<{
+      provider: PersonalAiProvider
+      configured: true
+      keyHint: string | null
+    }>('/ai-credentials', {
+      method: 'PUT',
+      body: JSON.stringify({
+        provider,
+        apiKey,
+      }),
+    }),
+
+  delete: (provider: PersonalAiProvider) =>
+    request<{
+      provider: PersonalAiProvider
+      configured: false
+      keyHint: null
+    }>(`/ai-credentials/${provider}`, {
+      method: 'DELETE',
+    }),
 }
 
 export const corpusApi = {
@@ -228,6 +290,23 @@ export const documentApi = {
         body: JSON.stringify({
           overrides,
         }),
+      },
+    ),
+
+  getLevel1ApiAccess: (id: string) =>
+    request<Level1ApiAccessResponse>(
+      `/documentos/${id}/level1/api-access`,
+    ),
+
+  updateLevel1ApiAccess: (
+    id: string,
+    mode: Level1ApiMode,
+  ) =>
+    request<Level1ApiAccessResponse>(
+      `/documentos/${id}/level1/api-access`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ mode }),
       },
     ),
 
@@ -387,7 +466,7 @@ export const analysisApi = {
     ),
 
   getLevel1Preview: (id: string) =>
-    request<Level1PreviewResponse>(
+    request<Level1PreviewWithApiAccess>(
       `/analisis/${id}/nivel/1/preview`,
     ),
 

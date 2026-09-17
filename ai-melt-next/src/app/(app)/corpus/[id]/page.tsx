@@ -31,12 +31,12 @@ import {
   FileText,
   Trash2,
   UploadCloud,
-  Settings2,
 } from 'lucide-react'
 import { LocalizedLevelBadge } from '@/components/i18n/LocalizedLevelBadge'
 import { useI18n } from '@/components/i18n/I18nProvider'
 import { Level0ConfigDialog } from '@/components/config/Level0ConfigDialog'
 import { Level1ConfigDialog } from '@/components/config/Level1ConfigDialog'
+import { ConfigurationMenu } from '@/components/config/ConfigurationMenu'
 import { DEFAULT_LEVEL0_CONFIG } from '@/lib/level0-config'
 import { DEFAULT_LEVEL1_CONFIG } from '@/lib/level1-config'
 
@@ -329,21 +329,27 @@ export default function CorpusDetailPage() {
             </div>
 
             <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowLevel0Config(true)}
-              >
-                <Settings2 size={16} />
-                {t('level0Config.configure')}
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => setShowLevel1Config(true)}
-              >
-                <Settings2 size={16} />
-                {t('level1Config.configure')}
-              </Button>
+              <ConfigurationMenu
+                label={t('common.configuration')}
+                items={[
+                  {
+                    key: 'level0',
+                    label: t(
+                      'level0Config.level0Configuration',
+                    ),
+                    onSelect: () =>
+                      setShowLevel0Config(true),
+                  },
+                  {
+                    key: 'level1',
+                    label: t(
+                      'level1Config.level1Configuration',
+                    ),
+                    onSelect: () =>
+                      setShowLevel1Config(true),
+                  },
+                ]}
+              />
 
               {docs.length > 0 && (
                 <Button
